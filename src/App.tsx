@@ -200,7 +200,7 @@ function App(){
  return <div className={"min-h-screen bg-[#050611] text-white "+(player.settings.reducedMotion?"reduced-motion":"")}>
    <AmbientBackground enabled={player.settings.particles}/>
    <div>
-    <Header player={player} xp={xpPercent(player)} setView={setView} openCodes={()=>setCodeOpen(true)} openMenu={()=>setMenuOpen(true)}/>
+    <Header player={player} view={view} xp={xpPercent(player)} setView={setView} openMenu={()=>setMenuOpen(true)}/>
     <main className="relative z-10 px-4 pb-28 pt-4 sm:px-6 xl:px-8">
       {view==="home"&&<HomeView player={player} best={best} equipped={equipped} setView={setView} openZones={()=>setZoneOpen(true)}/>}
       {view==="roll"&&<RollView player={player} lastRoll={lastRoll} luck={luck} rolling={rolling} autoRoll={autoRoll} setAutoRoll={setAutoRoll} wheelItems={wheelItems} wheelOffset={wheelOffset} banner={banner} setBanner={setBanner} doRoll={doRoll} history={player.stats.history} equipped={equipped} equip={equip} openZones={()=>setZoneOpen(true)}/>}
@@ -263,7 +263,7 @@ function updateAchievements(player:PlayerState,result:RngItem){
 
 function AmbientBackground({enabled}:{enabled:boolean}){return <div className="ambient"><div className="ambient-grid"/><div className="orb orb-a"/><div className="orb orb-b"/><div className="orb orb-c"/>{enabled&&<div className="particle-field">{Array.from({length:30}).map((_,i)=><span key={i} style={{left:(i*37)%100+"%",top:(i*53)%100+"%",animationDelay:(i%7)*-1.2+"s",animationDuration:5+(i%5)+"s"}}/>)}</div>}</div>}
 
-function Header({player,xp,setView,openCodes,openMenu}:{player:PlayerState;xp:number;setView:(v:View)=>void;openCodes:()=>void;openMenu:()=>void}){
+function Header({player,view,xp,setView,openMenu}:{player:PlayerState;view:View;xp:number;setView:(v:View)=>void;openMenu:()=>void}){
  const active=player.boosts.luck&&player.boosts.luck>Date.now()?Math.ceil((player.boosts.luck-Date.now())/1000):0;
  return <header className="topbar topbar-game">
   <div className="brand-inline"><div className="brand-mark brand-mark-sm">✦</div><div className="brand-title brand-title-inline">ANIME RNG</div></div>
