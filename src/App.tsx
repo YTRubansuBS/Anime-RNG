@@ -44,13 +44,15 @@ function App(){
    setRolling(true);
    const result=rollRng(player,banner);
    const high=["LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
+   const isNew=!player.inventory.some(e=>e.itemId===result.id);
+   const xpGain=Math.max(5,Math.round(9+result.power/45));
+   const predictedLevel=gainXp(player,xpGain).level;
    const delay=player.settings.animations&&!player.settings.reducedMotion?(high?1250:520):90;
    window.setTimeout(()=>{
      setLastRoll(result);
      setResultOpen(true);
      const entry={id:String(Date.now())+"-"+Math.random(),itemId:result.id,locked:false,favorite:false,obtainedAt:Date.now()};
      setPlayer(p=>{
-       const isNew=!p.inventory.some(e=>e.itemId===result.id);
        const inv=[...p.inventory,entry].slice(-p.inventoryCapacity);
        const epicDone=["EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
        const legendaryDone=["LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
@@ -73,13 +75,13 @@ function App(){
            return q;
          })
        };
-       next=gainXp(next,Math.max(5,Math.round(9+result.power/45)));
+       next=gainXp(next,xpGain);
        next.achievements=updateAchievements(next,result);
-       if(isNew)notify(result.name+" ajouté à la collection !");
-       if(next.level>p.level)notify("Niveau "+next.level+" débloqué !",true);
        return next;
      });
      setRolling(false);
+     if(isNew)notify(result.name+" ajouté à la collection !");
+     if(predictedLevel>player.level)notify("Niveau "+predictedLevel+" débloqué !",true);
      if(high){if(player.settings.sfx)playRngTone("rare");notify("INCROYABLE ! "+result.chanceDisplay+" — "+result.name,true);}
    },delay);
  };
