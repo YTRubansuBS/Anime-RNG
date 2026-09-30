@@ -197,3 +197,88 @@ button:disabled{cursor:not-allowed;opacity:.5}
 @media (max-width:800px){.topbar{margin:8px;top:8px}.hero-panel{padding:23px;min-height:auto}.hero-copy h1{font-size:42px}.hero-stats{gap:15px;flex-wrap:wrap}.hero-art{min-height:330px}.ring-3{width:340px;height:340px}.skill-board{grid-template-columns:1fr}.quest-columns,.achievement-grid,.settings-grid{grid-template-columns:1fr}.daily-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.roll-stage{min-height:640px}.pity-grid{grid-template-columns:1fr}.profile-hero{align-items:flex-start;flex-wrap:wrap}.profile-badge{margin-left:auto}}
 @media (max-width:520px){.topbar-left{gap:4px}.currency-pill{padding:6px 7px}.level-pill .xp-mini{display:none}.hero-copy h1{font-size:34px}.hero-art{min-height:280px}.hero-core{width:155px;height:210px}.floating-card{display:none}.roll-button{width:190px}.daily-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-grid{grid-template-columns:1fr}.leader-row{grid-template-columns:36px 31px 1fr 100px}.leader-name span{display:none}.page-heading h2,.roll-topline h2{font-size:17px}.shop-hero{align-items:flex-start;flex-direction:column}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+/* Simplified game navigation */
+.topbar-game{gap:14px;min-height:62px;padding:8px 10px}
+.brand-inline{display:flex;align-items:center;gap:9px;min-width:max-content}
+.brand-mark-sm{width:36px;height:36px;border-radius:11px}
+.brand-title-inline{font-size:11px}
+.main-nav{display:flex;align-items:center;gap:4px;flex:1;justify-content:center}
+.main-nav-item{display:flex;align-items:center;gap:7px;padding:10px 13px;border-radius:12px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.5);font:700 9px Inter;letter-spacing:.12em;transition:.2s}
+.main-nav-item:hover{color:white;background:rgba(255,255,255,.04)}
+.main-nav-active{color:white;background:linear-gradient(100deg,rgba(129,140,248,.15),rgba(217,70,239,.07));border-color:rgba(129,140,248,.14)}
+.main-nav-menu{color:#ddd6fe;border-color:rgba(129,140,248,.13);background:rgba(129,140,248,.055)}
+.topbar-currencies{gap:5px;flex:none}
+.luck-pill{display:flex;align-items:center;gap:6px;padding:8px 10px;min-height:34px;border:1px solid rgba(52,211,153,.10);background:rgba(52,211,153,.035);border-radius:13px;font-size:11px;color:#bbf7d0}
+.avatar-xs{width:22px;height:22px;border-radius:8px;font-size:8px}
+.menu-quick{color:#ddd6fe}
+.menu-overlay{position:fixed;inset:0;z-index:100;background:rgba(2,3,10,.7);backdrop-filter:blur(14px);display:flex;align-items:flex-start;justify-content:center;padding:88px 18px 30px;overflow:auto}
+.menu-panel{width:min(980px,100%);border:1px solid rgba(255,255,255,.10);border-radius:28px;background:linear-gradient(180deg,rgba(12,15,32,.98),rgba(7,9,19,.98));box-shadow:0 40px 120px rgba(0,0,0,.5);padding:20px}
+.menu-panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.menu-panel-head h2{font:800 27px Orbitron;margin:4px 0}.menu-panel-head p{margin:0;color:rgba(255,255,255,.4);font-size:11px}
+.menu-profile-strip{display:flex;align-items:center;gap:10px;margin-top:17px;padding:11px 13px;border-radius:16px;border:1px solid rgba(255,255,255,.065);background:rgba(255,255,255,.025)}
+.avatar-lg{width:40px;height:40px;border-radius:13px}
+.menu-profile-strip>b{font-size:12px}.menu-profile-strip span{display:block;margin-top:2px;color:rgba(255,255,255,.35);font-size:9px}.menu-mini-stats{margin-left:auto;display:flex;gap:7px}.menu-mini-stats span{margin:0;padding:8px 9px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:#dbeafe;font:600 10px Orbitron}
+.menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:13px}
+.menu-card{display:flex;align-items:center;gap:10px;text-align:left;padding:13px;border-radius:16px;border:1px solid rgba(255,255,255,.065);background:rgba(255,255,255,.022);color:white;transition:.2s}
+.menu-card:hover{transform:translateY(-2px);border-color:rgba(129,140,248,.23);background:rgba(129,140,248,.055);box-shadow:0 14px 30px rgba(0,0,0,.15)}
+.menu-icon{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,rgba(129,140,248,.12),rgba(217,70,239,.07));font-size:19px}
+.menu-card-copy{min-width:0;flex:1}.menu-card-copy b{display:block;font:700 11px Orbitron}.menu-card-copy small{display:block;margin-top:4px;color:rgba(255,255,255,.35);font-size:9px}.menu-arrow{color:rgba(255,255,255,.25);font-size:14px}
+
+/* Focused Roll experience */
+.roll-page-shell{max-width:1240px;margin:0 auto;display:grid;gap:12px}
+.roll-topline-simple h1{margin:4px 0 0;font:800 clamp(25px,3vw,39px) Orbitron;letter-spacing:-.03em}.roll-topline-simple h1 span{background:linear-gradient(90deg,#c4b5fd,#67e8f9,#f0abfc);-webkit-background-clip:text;color:transparent}
+.roll-head-actions{display:flex;align-items:center;gap:7px}
+.banner-tabs-compact{max-width:980px}
+.roll-command-grid{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
+.roll-main-card{position:relative;overflow:hidden;min-height:740px;padding:17px;border-radius:28px;border:1px solid rgba(255,255,255,.085);background:radial-gradient(circle at 50% 32%,rgba(129,140,248,.08),transparent 28%),linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));box-shadow:0 28px 80px rgba(0,0,0,.22)}
+.roll-main-card:before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 50% 46%,rgba(217,70,239,.035),transparent 38%);pointer-events:none}
+.roll-main-head{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.roll-stats-mini{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.roll-stats-mini span{padding:7px 9px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.018);color:rgba(255,255,255,.5);font-size:9px}
+.roll-command{position:relative;z-index:4;display:flex;justify-content:center;margin-top:-2px}
+.roll-button-hero{width:245px;height:112px;border-radius:31px}
+.roll-button-hero .roll-button-inner{border-radius:28px}.roll-button-hero .roll-symbol{font-size:17px}.roll-button-hero small{font-size:8px;letter-spacing:.15em}
+.roll-bottom-stats{position:relative;z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:14px}
+.roll-bottom-stats>div{padding:9px 10px;border:1px solid rgba(255,255,255,.055);background:rgba(255,255,255,.018);border-radius:13px;min-width:0}
+.roll-bottom-stats span{display:block;color:rgba(255,255,255,.3);font-size:8px}.roll-bottom-stats b{display:block;margin-top:4px;font:700 11px Orbitron;white-space:nowrap}
+.roll-side-stack{display:grid;gap:12px}
+.recent-rolls-panel{padding:14px 15px;border:1px solid rgba(255,255,255,.075);border-radius:20px;background:rgba(255,255,255,.02)}
+.recent-title-row{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:10px}.recent-title-row h2{margin:4px 0 0;font:700 15px Orbitron}.recent-title-row>span{font-size:9px;color:rgba(255,255,255,.28)}
+.recent-rolls-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;overflow:auto}
+.recent-roll-card{min-width:0;padding:9px;border:1px solid rgba(255,255,255,.055);background:rgba(255,255,255,.018);border-radius:14px;display:flex;align-items:center;gap:8px}
+.recent-roll-icon{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.035);font-size:14px}
+.recent-roll-card b{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recent-roll-card span{display:block;font-size:7px;letter-spacing:.1em;color:rgba(255,255,255,.28);margin-top:2px}.recent-roll-card em{display:block;font:700 8px Orbitron;color:#ddd6fe;margin-top:3px;font-style:normal}
+.rarity-card-legendary,.rarity-card-mythic,.rarity-card-divine,.rarity-card-celestial,.rarity-card-transcendent,.rarity-card-secret{border-color:rgba(217,70,239,.14);box-shadow:0 0 22px rgba(217,70,239,.05)}
+
+/* Vertical slot / RNG machine */
+.roller-shell{position:relative;z-index:2;height:535px;display:grid;place-items:center}
+.roller-window{position:relative;width:min(620px,92%);height:420px;overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:27px;background:linear-gradient(180deg,rgba(3,4,12,.82),rgba(9,11,24,.95));box-shadow:inset 0 0 55px rgba(129,140,248,.08),0 25px 70px rgba(0,0,0,.35)}
+.roller-window:before,.roller-window:after{content:"";position:absolute;left:0;right:0;height:110px;z-index:5;pointer-events:none}
+.roller-window:before{top:0;background:linear-gradient(180deg,#090b18,transparent)}.roller-window:after{bottom:0;background:linear-gradient(0deg,#090b18,transparent)}
+.roller-fade{position:absolute;left:0;right:0;height:94px;z-index:7;pointer-events:none}.roller-fade-top{top:0;background:linear-gradient(180deg,rgba(5,6,17,.95),transparent)}.roller-fade-bottom{bottom:0;background:linear-gradient(0deg,rgba(5,6,17,.96),transparent)}
+.roller-selector{position:absolute;left:9px;right:9px;top:50%;height:82px;z-index:8;transform:translateY(-50%);border:1px solid rgba(196,181,253,.4);border-radius:18px;background:linear-gradient(90deg,rgba(129,140,248,.06),rgba(255,255,255,.018),rgba(217,70,239,.06));box-shadow:0 0 35px rgba(129,140,248,.15),inset 0 0 25px rgba(255,255,255,.025);pointer-events:none}
+.roller-selector:before,.roller-selector:after{content:"";position:absolute;top:50%;width:10px;height:10px;border-radius:50%;transform:translateY(-50%);background:#c4b5fd;box-shadow:0 0 16px #c4b5fd}.roller-selector:before{left:-5px}.roller-selector:after{right:-5px}
+.roller-selector span{position:absolute;left:50%;top:-12px;transform:translateX(-50%);font-size:12px;color:#f0abfc;text-shadow:0 0 15px #f0abfc}
+.roller-selector i{position:absolute;left:50%;bottom:-5px;width:30px;height:2px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,#c4b5fd,transparent);box-shadow:0 0 10px #c4b5fd}
+.roller-reel{position:absolute;left:12px;right:12px;top:0;display:flex;flex-direction:column;gap:10px;transition:transform 1.78s cubic-bezier(.055,.72,.12,1);will-change:transform}
+.roll-reel-card{height:82px;flex:none;display:flex;align-items:center;gap:13px;padding:10px 15px;border:1px solid rgba(255,255,255,.065);border-radius:18px;background:linear-gradient(100deg,rgba(255,255,255,.045),rgba(255,255,255,.018));filter:blur(.2px) saturate(.8);transform:scale(.94);opacity:.68}
+.roll-reel-card:before{content:"";width:3px;height:34px;border-radius:99px;background:linear-gradient(#818cf8,#d946ef);opacity:.45}
+.roll-reel-icon{width:45px;height:45px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.04);font-size:20px;flex:none;text-shadow:0 0 16px currentColor}
+.roll-reel-card b{display:block;font:700 11px Orbitron;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.roll-reel-card span{display:block;margin-top:4px;font-size:8px;letter-spacing:.14em;color:rgba(255,255,255,.28)}
+.roll-reel-card .chance-badge{margin-top:0;margin-left:auto}
+.roller-active .roller-selector{animation:selectorPulse .8s ease-in-out infinite}.roller-active .roller-window{box-shadow:inset 0 0 80px rgba(129,140,248,.11),0 25px 90px rgba(0,0,0,.4),0 0 70px rgba(129,140,248,.09)}
+.roller-active .roll-reel-card{animation:reelCard 1s linear infinite}
+.roller-caption{position:absolute;bottom:7px;font:700 8px Orbitron;letter-spacing:.35em;color:rgba(255,255,255,.22)}
+.idle-result-card{position:absolute;left:10px;right:10px;top:50%;height:82px;transform:translateY(-50%) scale(1.06);z-index:7;display:flex;align-items:center;gap:13px;padding:11px 16px;border:1px solid rgba(196,181,253,.24);border-radius:18px;background:linear-gradient(100deg,rgba(129,140,248,.12),rgba(255,255,255,.035),rgba(217,70,239,.09));box-shadow:0 0 55px rgba(129,140,248,.13);text-align:left}
+.idle-result-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:rgba(255,255,255,.05);color:#f5d0fe;font-size:24px;box-shadow:0 0 25px rgba(217,70,239,.10)}
+.idle-result-name{flex:1;min-width:0;font:800 14px Orbitron;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.idle-result-chance{font:800 20px Orbitron;color:#f8fafc;white-space:nowrap;text-shadow:0 0 20px rgba(196,181,253,.35)}
+.roller-glow{position:absolute;border-radius:50%;filter:blur(25px);pointer-events:none}.roller-glow-one{width:260px;height:120px;background:rgba(129,140,248,.10)}.roller-glow-two{width:190px;height:100px;background:rgba(217,70,239,.08);transform:translateY(90px)}
+@keyframes selectorPulse{0%,100%{box-shadow:0 0 25px rgba(129,140,248,.12),inset 0 0 20px rgba(255,255,255,.02)}50%{box-shadow:0 0 55px rgba(217,70,239,.23),inset 0 0 30px rgba(255,255,255,.03)}}
+@keyframes reelCard{0%,100%{opacity:.6;transform:scale(.94)}50%{opacity:.75;transform:scale(.965)}}
+
+/* Make the reveal actually feel rare */
+.modal-intense{background:rgba(1,1,7,.86);animation:rareBackdrop .6s ease both}
+.modal-intense .result-modal{transform:scale(1.015);box-shadow:0 40px 140px rgba(0,0,0,.72),0 0 150px var(--glow);animation:rareModalIn .65s cubic-bezier(.15,.85,.2,1) both}
+.modal-intense .modal-icon{font-size:clamp(82px,13vw,145px);animation:rareIcon .9s cubic-bezier(.1,.85,.2,1) both}
+.modal-intense .modal-name{font-size:clamp(30px,6vw,58px);text-shadow:0 0 35px var(--glow)}
+.modal-intense .chance-large{font-size:clamp(24px,5vw,52px);padding:12px 19px;border-color:rgba(255,255,255,.18);box-shadow:0 0 35px var(--glow),inset 0 0 30px rgba(255,255,255,.04)}
+@keyframes rareBackdrop{from{opacity:0}to{opacity:1}}@keyframes rareModalIn{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1.015)}}@keyframes rareIcon{0%{opacity:0;transform:scale(.35) rotate(-16deg)}70%{opacity:1;transform:scale(1.12) rotate(3deg)}100%{transform:scale(1)}}
