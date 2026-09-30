@@ -15,10 +15,14 @@ const RARITY_LIST:Rarity[]=["COMMON","UNCOMMON","RARE","EPIC","LEGENDARY","MYTHI
 function App(){
  const [player,setPlayer]=usePlayer();
  usePlayerTicker(setPlayer);
- const [view,setView]=useState<View>("home");
+ const [view,setView]=useState<View>("roll");
  const [lastRoll,setLastRoll]=useState<RngItem|undefined>(()=>ITEMS.find(x=>x.id===player.equipped)||ITEMS[0]);
  const [resultOpen,setResultOpen]=useState(false);
  const [rolling,setRolling]=useState(false);
+ const [wheelItems,setWheelItems]=useState<RngItem[]>([]);
+ const [wheelOffset,setWheelOffset]=useState(0);
+ const [menuOpen,setMenuOpen]=useState(false);
+ const [eventOpen,setEventOpen]=useState(false);
  const [autoRoll,setAutoRoll]=useState(false);
  const [banner,setBanner]=useState<RngItem["banner"]>("NORMAL");
  const [query,setQuery]=useState("");
@@ -47,7 +51,17 @@ function App(){
    const isNew=!player.inventory.some(e=>e.itemId===result.id);
    const xpGain=Math.max(5,Math.round(9+result.power/45));
    const predictedLevel=gainXp(player,xpGain).level;
-   const delay=player.settings.animations&&!player.settings.reducedMotion?(high?1250:520):90;
+   const reelPool=ITEMS.filter(i=>i.banner===banner||banner==="NORMAL"&&i.banner==="NORMAL");
+   const reelPrefix=Array.from({length:18},()=>reelPool[Math.floor(Math.random()*Math.max(1,reelPool.length))]||ITEMS[0]);
+   const reel=[...reelPrefix,result,...Array.from({length:6},()=>reelPool[Math.floor(Math.random()*Math.max(1,reelPool.length))]||ITEMS[0])];
+   const targetIndex=18;
+   const cardStep=92;
+   const viewportHeight=420;
+   const targetOffset=targetIndex*cardStep-(viewportHeight-78)/2;
+   setWheelItems(reel);
+   setWheelOffset(targetOffset+900);
+   window.setTimeout(()=>setWheelOffset(targetOffset),45);
+   const delay=player.settings.animations&&!player.settings.reducedMotion?(high?2350:1750):180;
    window.setTimeout(()=>{
      setLastRoll(result);
      setResultOpen(true);
@@ -185,12 +199,11 @@ function App(){
 
  return <div className={"min-h-screen bg-[#050611] text-white "+(player.settings.reducedMotion?"reduced-motion":"")}>
    <AmbientBackground enabled={player.settings.particles}/>
-   <Sidebar view={view} setView={setView} openCodes={()=>setCodeOpen(true)} player={player}/>
-   <div className="lg:pl-[274px]">
-    <Header player={player} xp={xpPercent(player)} setView={setView} openCodes={()=>setCodeOpen(true)}/>
+   <div>
+    <Header player={player} xp={xpPercent(player)} setView={setView} openCodes={()=>setCodeOpen(true)} openMenu={()=>setMenuOpen(true)}/>
     <main className="relative z-10 px-4 pb-28 pt-4 sm:px-6 xl:px-8">
       {view==="home"&&<HomeView player={player} best={best} equipped={equipped} setView={setView} openZones={()=>setZoneOpen(true)}/>}
-      {view==="roll"&&<RollView player={player} lastRoll={lastRoll} luck={luck} rolling={rolling} autoRoll={autoRoll} setAutoRoll={setAutoRoll} banner={banner} setBanner={setBanner} doRoll={doRoll} history={player.stats.history} equipped={equipped} equip={equip} openZones={()=>setZoneOpen(true)}/>}
+      {view==="roll"&&<RollView player={player} lastRoll={lastRoll} luck={luck} rolling={rolling} autoRoll={autoRoll} setAutoRoll={setAutoRoll} wheelItems={wheelItems} wheelOffset={wheelOffset} banner={banner} setBanner={setBanner} doRoll={doRoll} history={player.stats.history} equipped={equipped} equip={equip} openZones={()=>setZoneOpen(true)}/>}
       {view==="collection"&&<CollectionView player={player} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} equip={equip} favorite={favorite}/>}
       {view==="inventory"&&<InventoryView player={player} query={query} setQuery={setQuery} selected={selected} setSelected={setSelected} equip={equip} favorite={favorite} sell={sell} openSell={()=>setSellConfirm(true)}/>}
       {view==="shop"&&<ShopView player={player} buy={buyShop}/>}
@@ -205,12 +218,14 @@ function App(){
       {view==="settings"&&<SettingsView player={player} setPlayer={setPlayer}/>}
     </main>
    </div>
-   <MobileNav view={view} setView={setView}/>
+   <MobileNav view={view} setView={setView} openMenu={()=>setMenuOpen(true)}/>
    <Notifications items={notes}/>
    {resultOpen&&lastRoll&&<ResultModal item={lastRoll} player={player} close={()=>setResultOpen(false)} equip={()=>{equip(lastRoll.id);setResultOpen(false)}}/>}
    {codeOpen&&<Modal title="CODES" close={()=>setCodeOpen(false)}><div className="space-y-5"><p className="text-sm text-white/55">Entre un code pour recevoir des coins, gems ou tickets.</p><div className="flex gap-2"><input className="field flex-1" placeholder="Entre ton code..." value={codeInput} onChange={e=>setCodeInput(e.target.value)}/><button className="primary-btn" onClick={redeem}>VALIDER</button></div><div className="grid gap-3 sm:grid-cols-3">{Object.keys(CODES).map(c=><button key={c} className="mini-card text-left" onClick={()=>setCodeInput(c)}>{c}<span className="mt-1 block text-xs text-white/35">Cliquer pour remplir</span></button>)}</div></div></Modal>}
    {sellConfirm&&<Modal title="VENTE MULTIPLE" close={()=>setSellConfirm(false)}><p className="text-sm text-white/55">Vendre {selected.length} objet(s) sélectionné(s) ? Favoris et verrouillés sont ignorés.</p><div className="mt-5 flex justify-end gap-3"><button className="ghost-btn" onClick={()=>setSellConfirm(false)}>ANNULER</button><button className="danger-btn" onClick={sellSelected}>VENDRE</button></div></Modal>}
    {zoneOpen&&<Modal title="ZONES • CHOISIS TA DESTINATION" close={()=>setZoneOpen(false)}><div className="grid gap-3 md:grid-cols-2">{ZONES.map(z=>{const unlocked=player.zones.includes(z.name);const cost=2500*(z.index+1);return <button className={"zone-card "+(unlocked?"zone-card-active":"")} key={z.id} onClick={()=>{unlockZone(z.name,z.index);setZoneOpen(false)}}><div className="flex items-center justify-between gap-3"><div className="text-left"><div className="font-display text-sm">{z.name}</div><div className="mt-1 text-xs text-white/40">{z.description}</div></div><span className="badge whitespace-nowrap">{unlocked?"DÉBLOQUÉE":formatNumber(cost)+" ◈"}</span></div><div className="mt-4 flex justify-between text-xs text-white/35"><span>{z.bonus}</span><span>Zone {z.index+1}/7</span></div></button>})}</div></Modal>}
+   {menuOpen&&<MenuPanel player={player} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}}/>}
+   {eventOpen&&<Modal title="EVENTS • LUCKY FESTIVAL" close={()=>setEventOpen(false)}><div className="event-spotlight"><div className="event-kicker">TEMPS LIMITÉ • ACTIF MAINTENANT</div><div className="event-spotlight-title">{EVENTS[0].title}</div><p>{EVENTS[0].description}</p><div className="event-spotlight-grid"><div><span>BONUS</span><b>{EVENTS[0].bonus}</b></div><div><span>DURÉE</span><b>{EVENTS[0].duration}</b></div></div></div></Modal>}
    {tutorial&&<Modal title={["BIENVENUE","PREMIER ROLL","COLLECTION","ÉQUIPE TON DROP","PROGRESSE","CONTINUE"][tutorialStep]} close={finishTutorial}><div className="space-y-5"><div className="tutorial-orb"><span>{tutorialStep+1}</span></div><p className="text-sm leading-7 text-white/65">{[
      "Ta chasse commence maintenant. Chaque roll peut révéler une aura originale.",
      "Clique sur ROLL : le moteur consulte réellement le dénominateur 1/X de chaque résultat.",
@@ -248,14 +263,98 @@ function updateAchievements(player:PlayerState,result:RngItem){
 
 function AmbientBackground({enabled}:{enabled:boolean}){return <div className="ambient"><div className="ambient-grid"/><div className="orb orb-a"/><div className="orb orb-b"/><div className="orb orb-c"/>{enabled&&<div className="particle-field">{Array.from({length:30}).map((_,i)=><span key={i} style={{left:(i*37)%100+"%",top:(i*53)%100+"%",animationDelay:(i%7)*-1.2+"s",animationDuration:5+(i%5)+"s"}}/>)}</div>}</div>}
 
-function Sidebar({view,setView,player,openCodes}:{view:View;setView:(v:View)=>void;player:PlayerState;openCodes:()=>void}){return <aside className="sidebar hidden lg:flex"><div className="brand-block"><div className="brand-mark">✦</div><div><div className="brand-title">ANIME RNG</div><div className="brand-sub">BEYOND FATE</div></div></div><div className="sidebar-section"><div className="section-label">GAME</div>{NAV.slice(0,5).map(n=><NavItem key={n.id} item={n} active={view===n.id} onClick={()=>setView(n.id)}/>)}</div><div className="sidebar-section"><div className="section-label">PROGRESSION</div>{NAV.slice(5,10).map(n=><NavItem key={n.id} item={n} active={view===n.id} onClick={()=>setView(n.id)}/>)}</div><div className="sidebar-section"><div className="section-label">PLUS</div>{NAV.slice(10).map(n=><NavItem key={n.id} item={n} active={view===n.id} onClick={()=>setView(n.id)}/>)}</div><div className="sidebar-bottom"><button className="code-side" onClick={openCodes}><span>⌁</span><span><b>CODES</b><small>Récompenses bonus</small></span></button><div className="mini-profile"><div className="avatar">{player.username[0]}</div><div className="min-w-0"><div className="truncate font-semibold text-xs">{player.username}</div><div className="truncate text-[9px] text-white/35">Niveau {player.level} • {player.equippedTitle}</div></div></div></div></aside>}
-function NavItem({item,active,onClick}:{item:{icon:string;label:string};active:boolean;onClick:()=>void}){return <button onClick={onClick} className={"nav-item "+(active?"nav-item-active":"")}><span className="nav-icon">{item.icon}</span><span>{item.label}</span>{active&&<span className="nav-pip"/>}</button>}
-function MobileNav({view,setView}:{view:View;setView:(v:View)=>void}){return <nav className="mobile-nav lg:hidden">{NAV.slice(0,5).map(n=><button key={n.id} className={view===n.id?"mobile-nav-active":""} onClick={()=>setView(n.id)}><span>{n.icon}</span><small>{n.label}</small></button>)}</nav>}
-function Header({player,xp,setView,openCodes}:{player:PlayerState;xp:number;setView:(v:View)=>void;openCodes:()=>void}){const active=player.boosts.luck&&player.boosts.luck>Date.now()?Math.ceil((player.boosts.luck-Date.now())/1000):0;return <header className="topbar"><div className="topbar-left"><button className="mobile-menu lg:hidden" onClick={()=>setView("home")}>☰</button><div className="level-pill"><span className="level-dot">LV</span><strong>{player.level}</strong><span className="xp-mini"><span style={{width:xp+"%"}}/></span></div><div className="currency-pill"><span>◈</span><strong>{formatNumber(player.coins)}</strong></div><div className="currency-pill gem"><span>✦</span><strong>{formatNumber(player.gems)}</strong></div><div className="currency-pill ticket"><span>◆</span><strong>{formatNumber(player.tickets)}</strong></div></div><div className="topbar-right">{active>0&&<div className="boost-chip">⚡ {active}s</div>}<button className="top-action" onClick={openCodes}>⌁ <span className="hidden sm:inline">CODE</span></button><button className="top-action" onClick={()=>setView("rewards")}>◇ <span className="hidden sm:inline">REWARDS</span></button><button className="top-action" onClick={()=>setView("profile")}>◎</button></div></header>}
+function Header({player,xp,setView,openCodes,openMenu}:{player:PlayerState;xp:number;setView:(v:View)=>void;openCodes:()=>void;openMenu:()=>void}){
+ const active=player.boosts.luck&&player.boosts.luck>Date.now()?Math.ceil((player.boosts.luck-Date.now())/1000):0;
+ return <header className="topbar topbar-game">
+  <div className="brand-inline"><div className="brand-mark brand-mark-sm">✦</div><div className="brand-title brand-title-inline">ANIME RNG</div></div>
+  <nav className="main-nav hidden md:flex">
+   {NAV.filter(n=>["roll","collection","shop","upgrades"].includes(n.id)).map(n=><button key={n.id} className={"main-nav-item "+(view===n.id?"main-nav-active":"")} onClick={()=>setView(n.id)}><span>{n.icon}</span>{n.label}</button>)}
+   <button className="main-nav-item main-nav-menu" onClick={openMenu}><span>☰</span>MENU</button>
+  </nav>
+  <div className="topbar-left topbar-currencies">
+   <div className="currency-pill"><span>◈</span><strong>{formatNumber(player.coins)}</strong></div>
+   <div className="currency-pill gem"><span>✦</span><strong>{formatNumber(player.gems)}</strong></div>
+   <div className="luck-pill"><span>🍀</span><strong>+{player.luck}%</strong></div>
+   {active>0&&<div className="boost-chip hidden xl:flex">⚡ {active}s</div>}
+  </div>
+  <div className="topbar-right">
+   <button className="top-action profile-quick" onClick={()=>setView("profile")}><span className="avatar avatar-xs">{player.username[0]}</span><span className="hidden xl:inline">{player.username}</span></button>
+   <button className="top-action menu-quick" onClick={openMenu}>☰ <span className="hidden sm:inline">MENU</span></button>
+  </div>
+ </header>
+}
+
+function MobileNav({view,setView,openMenu}:{view:View;setView:(v:View)=>void;openMenu:()=>void}){
+ return <nav className="mobile-nav md:hidden">
+  {[
+   {id:"roll" as View,label:"Roll",icon:"🎲"},
+   {id:"collection" as View,label:"Collection",icon:"🎒"},
+   {id:"shop" as View,label:"Shop",icon:"🛒"},
+   {id:"upgrades" as View,label:"Upgrades",icon:"⚡"},
+  ].map(n=><button key={n.id} className={view===n.id?"mobile-nav-active":""} onClick={()=>setView(n.id)}><span>{n.icon}</span><small>{n.label}</small></button>)}
+  <button onClick={openMenu} className="mobile-menu-item"><span>☰</span><small>Menu</small></button>
+ </nav>
+}
+
+function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player:PlayerState;close:()=>void;setView:(v:View)=>void;openCodes:()=>void;openZones:()=>void;openEvents:()=>void}){
+ const items:{label:string;icon:string;view?:View;action?:()=>void;desc:string}[]=[
+  {label:"Accueil",icon:"⌂",view:"home",desc:"Vue d'ensemble"},
+  {label:"Skills",icon:"⚡",view:"skills",desc:"Arbre de compétences"},
+  {label:"Quêtes",icon:"📜",view:"quests",desc:"Objectifs & missions"},
+  {label:"Récompenses",icon:"🎁",view:"rewards",desc:"Connexion quotidienne"},
+  {label:"Profil",icon:"👤",view:"profile",desc:"Tes statistiques"},
+  {label:"Leaderboard",icon:"👑",view:"leaderboard",desc:"Top des chasseurs"},
+  {label:"Achievements",icon:"🏆",view:"achievements",desc:"Succès à débloquer"},
+  {label:"Statistiques",icon:"📊",view:"stats",desc:"Détails RNG"},
+  {label:"Codes",icon:"🎟️",action:openCodes,desc:"Récompenses bonus"},
+  {label:"Zones",icon:"🌌",action:openZones,desc:"Changer de monde"},
+  {label:"Events",icon:"🔥",action:openEvents,desc:"Événements actifs"},
+  {label:"Settings",icon:"⚙️",view:"settings",desc:"Préférences"},
+ ];
+ const go=(item:(typeof items)[number])=>{if(item.view)setView(item.view);item.action?.();if(item.view||item.action)close();};
+ return <div className="menu-overlay" onMouseDown={e=>{if(e.currentTarget===e.target)close()}}>
+  <div className="menu-panel">
+   <div className="menu-panel-head"><div><div className="eyebrow">QUICK ACCESS</div><h2>MENU</h2><p>Tout le reste du jeu, sans surcharger le Roll.</p></div><button className="icon-btn" onClick={close}>×</button></div>
+   <div className="menu-profile-strip"><div className="avatar avatar-lg">{player.username[0]}</div><div><b>{player.username}</b><span>Niveau {player.level} • {player.equippedTitle}</span></div><div className="menu-mini-stats"><span>◈ {formatNumber(player.coins)}</span><span>✦ {formatNumber(player.gems)}</span></div></div>
+   <div className="menu-grid">{items.map(item=><button className="menu-card" key={item.label} onClick={()=>go(item)}><span className="menu-icon">{item.icon}</span><span className="menu-card-copy"><b>{item.label}</b><small>{item.desc}</small></span><span className="menu-arrow">→</span></button>)}</div>
+  </div>
+ </div>
+}
 
 function HomeView({player,best,equipped,setView,openZones}:{player:PlayerState;best:RngItem;equipped:RngItem;setView:(v:View)=>void;openZones:()=>void}){return <div className="page-shell"><section className="hero-panel"><div className="hero-copy"><div className="eyebrow"><span>✦</span> YOUR FATE IS WAITING</div><h1>Roll. Discover.<br/><span>Transcend.</span></h1><p>Une boucle RNG 2D originale où chaque roll peut devenir ton nouveau drop préféré. La vraie obsession : voir jusqu’où va ton prochain <b>1/X</b>.</p><div className="hero-buttons"><button className="primary-btn primary-lg" onClick={()=>setView("roll")}>PLAY RNG <span>→</span></button><button className="ghost-btn" onClick={openZones}>CHOISIR UNE ZONE</button></div><div className="hero-stats"><StatInline label="ROLLS" value={formatNumber(player.stats.totalRolls)}/><StatInline label="COLLECTION" value={new Set(player.inventory.map(e=>e.itemId)).size+" / "+ITEMS.length}/><StatInline label="BEST 1/X" value={"1/"+formatNumber(player.stats.bestDenominator)}/></div></div><div className="hero-art"><div className="hero-ring ring-1"/><div className="hero-ring ring-2"/><div className="hero-ring ring-3"/><div className="hero-core"><div className="core-label">EQUIPPED</div><div className="core-icon">{equipped.icon}</div><div className="core-name">{equipped.name}</div><ChanceBadge item={equipped} large/><RarityBadge rarity={equipped.rarity}/></div><div className="floating-card floating-best"><span>BEST DROP</span><b>{best.name}</b><small>{best.chanceDisplay}</small></div><div className="floating-card floating-event"><span>EVENT</span><b>{EVENTS[0].title}</b><small>{EVENTS[0].bonus}</small></div></div></section><section className="grid gap-4 xl:grid-cols-3"><Panel title="TA PROGRESSION" icon="↗" className="xl:col-span-2"><div className="grid gap-3 sm:grid-cols-3"><BigStat title="Luck" value={"+"+player.luck+"%"} hint="Chance de base" icon="✦"/><BigStat title="Roll Speed" value={player.rollSpeed.toFixed(2)+"x"} hint="Cadence" icon="↯"/><BigStat title="Play Time" value={formatDuration(player.stats.playSeconds)} hint="Temps de jeu" icon="◷"/></div><div className="mt-5 rounded-2xl border border-white/10 bg-white/[.025] p-4"><div className="mb-2 flex justify-between text-xs uppercase tracking-[.18em] text-white/45"><span>XP vers niveau {player.level+1}</span><span>{Math.round(xpPercent(player))}%</span></div><div className="xp-track"><div className="xp-fill" style={{width:xpPercent(player)+"%"}}/></div><div className="mt-2 text-xs text-white/35">{formatNumber(player.xp)} / {formatNumber(nextXp(player.level))} XP</div></div></Panel><Panel title="BOOSTS ACTIFS" icon="⚡"><BoostList player={player}/></Panel></section><section className="grid gap-4 xl:grid-cols-2"><Panel title="DERNIÈRES DÉCOUVERTES" icon="✦"><div className="grid gap-2 sm:grid-cols-2">{player.stats.history.slice(0,6).map((id,i)=><RngRow key={id+"-"+i} item={ITEMS.find(x=>x.id===id)} compact/>)}</div></Panel><Panel title="LUCKY FESTIVAL" icon="✺"><div className="event-card"><div><div className="event-kicker">ÉVÉNEMENT ACTIF</div><h3>{EVENTS[0].title}</h3><p>{EVENTS[0].description}</p></div><div className="event-bonus">{EVENTS[0].bonus}<span>{EVENTS[0].duration}</span></div></div></Panel></section></div>}
 
-function RollView({player,lastRoll,luck,rolling,autoRoll,setAutoRoll,banner,setBanner,doRoll,history,equipped,equip,openZones}:{player:PlayerState;lastRoll?:RngItem;luck:number;rolling:boolean;autoRoll:boolean;setAutoRoll:(v:boolean)=>void;banner:RngItem["banner"];setBanner:(v:RngItem["banner"])=>void;doRoll:()=>void;history:string[];equipped:RngItem;equip:(id:string)=>void;openZones:()=>void}){return <div className="page-shell"><div className="roll-topline"><div><div className="eyebrow">RNG CHAMBER</div><h2>La prochaine aura peut être <span>absurde.</span></h2></div><button className="ghost-btn" onClick={openZones}>ZONE • {player.selectedZone.toUpperCase()}</button></div><div className="banner-tabs">{(["NORMAL","ANCIENT","DIVINE","SECRET"] as const).map(b=><button key={b} onClick={()=>setBanner(b)} className={"banner-tab "+(banner===b?"banner-tab-active":"")}>{b}<span>{b==="NORMAL"?"1x":b==="ANCIENT"?"1.4x":b==="DIVINE"?"2x":"3x"}</span></button>)}</div><div className="roll-layout"><div className="panel roll-stage"><div className="roll-stage-top"><div className="tag">DROP ACTUEL</div><div className="tag tag-live">● LIVE RNG</div></div><div className={"result-orb-area "+(rolling?"is-rolling":"")} style={{"--glow":lastRoll?RARITIES[lastRoll.rarity].glow:"rgba(129,140,248,.25)"} as CSSProperties}><div className="result-halo halo-a"/><div className="result-halo halo-b"/><div className="result-card-main"><div className="result-icon-main">{lastRoll?.icon||"✦"}</div><div className="result-name-main">{lastRoll?.name||"Astra Novice"}</div>{lastRoll&&<><RarityBadge rarity={lastRoll.rarity} large/><ChanceBadge item={lastRoll} large/></>}<div className="result-power"><span>POWER</span><b>{formatNumber(lastRoll?.power||10)}</b></div></div></div><div className="roll-actions"><button className={"roll-button "+(rolling?"roll-button-disabled":"")} onClick={doRoll} disabled={rolling}><div className="roll-button-inner"><span className="roll-symbol">{rolling?"…":"✦"}</span><strong>{rolling?"ROLLING":"ROLL"}</strong><small>{player.rollSpeed.toFixed(2)}x cadence</small></div></button><div className="roll-tools"><button className={"toggle-btn "+(autoRoll?"toggle-on":"")} onClick={()=>setAutoRoll(!autoRoll)}>∞ AUTO ROLL <span>{autoRoll?"ON":"OFF"}</span></button><div className="stat-chip">✦ Luck <b>+{luck}%</b></div><div className="stat-chip">↯ Speed <b>{player.rollSpeed.toFixed(2)}x</b></div><div className="stat-chip">◉ Rolls <b>{formatNumber(player.stats.totalRolls)}</b></div></div></div><div className="pity-grid"><PityBar label="EPIC PITY" current={player.pity.epic}/><PityBar label="LEGENDARY PITY" current={player.pity.legendary}/><PityBar label="MYTHIC PITY" current={player.pity.mythic}/></div></div><div className="space-y-4"><Panel title="ÉQUIPÉ" icon="◈"><RngFeature item={equipped}/></Panel><Panel title="DERNIERS ROLLS" icon="↯"><div className="space-y-2">{history.slice(0,7).map((id,i)=><RngRow key={id+"-"+i} item={ITEMS.find(x=>x.id===id)} onEquip={equip}/>)}</div></Panel></div></div></div>}
+function RollView({player,lastRoll,luck,rolling,autoRoll,setAutoRoll,banner,setBanner,doRoll,history,equipped,equip,openZones,wheelItems,wheelOffset}:{player:PlayerState;lastRoll?:RngItem;luck:number;rolling:boolean;autoRoll:boolean;setAutoRoll:(v:boolean)=>void;banner:RngItem["banner"];setBanner:(v:RngItem["banner"])=>void;doRoll:()=>void;history:string[];equipped:RngItem;equip:(id:string)=>void;openZones:()=>void;wheelItems:RngItem[];wheelOffset:number}){
+ return <div className="roll-page-shell">
+  <div className="roll-topline roll-topline-simple">
+   <div><div className="eyebrow">RNG CHAMBER</div><h1>ROLL YOUR <span>FATE.</span></h1></div>
+   <div className="roll-head-actions"><button className="ghost-btn" onClick={openZones}>🌌 {player.selectedZone}</button><button className={"toggle-btn "+(autoRoll?"toggle-on":"")} onClick={()=>setAutoRoll(!autoRoll)}>∞ AUTO {autoRoll?"ON":"OFF"}</button></div>
+  </div>
+  <div className="banner-tabs banner-tabs-compact">{(["NORMAL","ANCIENT","DIVINE","SECRET"] as const).map(b=><button key={b} onClick={()=>setBanner(b)} className={"banner-tab "+(banner===b?"banner-tab-active":"")}>{b}<span>{b==="NORMAL"?"1x":b==="ANCIENT"?"1.4x":b==="DIVINE"?"2x":"3x"}</span></button>)}</div>
+  <div className="roll-command-grid">
+   <section className="roll-main-card">
+    <div className="roll-main-head"><div className="tag">LIVE RNG</div><div className="roll-stats-mini"><span>🍀 {luck}%</span><span>⚡ {player.rollSpeed.toFixed(2)}x</span><span>🎲 {formatNumber(player.stats.totalRolls)}</span></div></div>
+    <VerticalRoller rolling={rolling} items={wheelItems} offset={wheelOffset} lastRoll={lastRoll}/>
+    <div className="roll-command"><button className={"roll-button roll-button-hero "+(rolling?"roll-button-disabled":"")} onClick={doRoll} disabled={rolling}><div className="roll-button-inner"><span className="roll-symbol">{rolling?"…":"✦"}</span><strong>{rolling?"ROLLING":"ROLL"}</strong><small>{rolling?"FATE IN MOTION":"CLICK TO DISCOVER"}</small></div></button></div>
+    <div className="roll-bottom-stats"><div><span>🍀 Luck</span><b>+{luck}%</b></div><div><span>⚡ Roll Speed</span><b>{player.rollSpeed.toFixed(2)}x</b></div><div><span>🎲 Total Rolls</span><b>{formatNumber(player.stats.totalRolls)}</b></div><div><span>💎 Gems</span><b>{formatNumber(player.gems)}</b></div><div><span>🪙 Coins</span><b>{formatNumber(player.coins)}</b></div></div>
+   </section>
+   <aside className="roll-side-stack">
+    <Panel title="BOOSTS ACTIFS" icon="⚡"><BoostList player={player}/></Panel>
+    <Panel title="PITY" icon="◌"><div className="space-y-3"><PityBar label="EPIC" current={player.pity.epic}/><PityBar label="LEGENDARY" current={player.pity.legendary}/><PityBar label="MYTHIC" current={player.pity.mythic}/></div></Panel>
+    <Panel title="DROP ÉQUIPÉ" icon="◈"><RngFeature item={equipped}/></Panel>
+   </aside>
+  </div>
+  <section className="recent-rolls-panel"><div className="recent-title-row"><div><div className="eyebrow">RECENT FATE</div><h2>Derniers rolls</h2></div><span>{history.length} mémorisés</span></div><div className="recent-rolls-strip">{history.slice(0,7).map((id,i)=><RecentRollCard key={id+"-"+i} item={ITEMS.find(x=>x.id===id)}/>)}</div></section>
+ </div>
+}
+
+function VerticalRoller({rolling,items,offset,lastRoll}:{rolling:boolean;items:RngItem[];offset:number;lastRoll?:RngItem}){
+ const display=items.length?items:Array.from({length:7},()=>lastRoll||ITEMS[0]);
+ if(!rolling)return <div className="roller-shell"><div className="roller-glow roller-glow-one"/><div className="roller-glow roller-glow-two"/><div className="roller-window"><div className="roller-selector"/><div className="idle-result-card"><div className="idle-result-icon">{lastRoll?.icon||"✦"}</div><div className="idle-result-name">{lastRoll?.name||"Astra Novice"}</div>{lastRoll&&<RarityBadge rarity={lastRoll.rarity} large/>}<div className="idle-result-chance">{lastRoll?.chanceDisplay||"1/50"}</div></div></div></div>;
+ return <div className="roller-shell roller-active"><div className="roller-glow roller-glow-one"/><div className="roller-glow roller-glow-two"/><div className="roller-window"><div className="roller-fade roller-fade-top"/><div className="roller-selector"><span>◆</span><i/></div><div className="roller-fade roller-fade-bottom"/><div className="roller-reel" style={{transform:"translateY(-"+offset+"px)"}}>{display.map((item,i)=><RollReelCard item={item} key={i}/>)}</div></div><div className="roller-caption">UNE CHANCE. UN DESTIN.</div></div>;
+}
+
+function RollReelCard({item}:{item:RngItem}){return <div className="roll-reel-card"><div className="roll-reel-icon" style={{color:item.color}}>{item.icon}</div><div className="min-w-0 flex-1"><b>{item.name}</b><span>{item.rarity}</span></div><ChanceBadge item={item}/></div>}
+function RecentRollCard({item}:{item?:RngItem}){if(!item)return null;return <div className={"recent-roll-card rarity-card-"+item.rarity.toLowerCase()}><div className="recent-roll-icon" style={{color:item.color}}>{item.icon}</div><div className="min-w-0"><b>{item.name}</b><span>{item.rarity}</span><em>{item.chanceDisplay}</em></div></div>}
 
 function CollectionView({player,query,setQuery,filter,setFilter,equip,favorite}:{player:PlayerState;query:string;setQuery:(v:string)=>void;filter:Rarity|"ALL";setFilter:(v:Rarity|"ALL")=>void;equip:(id:string)=>void;favorite:(id:string)=>void}){const owned=new Set(player.inventory.map(e=>e.itemId));const items=ITEMS.filter(i=>filter==="ALL"||i.rarity===filter).filter(i=>i.name.toLowerCase().includes(query.toLowerCase()));return <div className="page-shell"><PageHeading title="COLLECTION" subtitle={owned.size+" / "+ITEMS.length+" résultats découverts"} icon="◈"/><div className="toolbar"><input className="field flex-1" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher une aura..."/><div className="filter-row">{["ALL",...RARITY_LIST].map(r=><button key={r} className={"filter-chip "+(filter===r?"filter-chip-active":"")} onClick={()=>setFilter(r as Rarity|"ALL")}>{r==="ALL"?"TOUT":r}</button>)}</div></div><div className="collection-grid">{items.map(item=><CollectionCard key={item.id} item={item} owned={owned.has(item.id)} equipped={player.equipped===item.id} favorite={player.favorites.includes(item.id)} equip={equip} favoriteToggle={favorite}/>)}</div></div>}
 
