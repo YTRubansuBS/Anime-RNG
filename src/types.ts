@@ -12,7 +12,7 @@ export interface SkillNode{id:string;name:string;branch:string;level:number;maxL
 export interface Upgrade{id:string;name:string;category:string;level:number;maxLevel:number;baseCost:number;effect:string;}
 export interface PlayerState{
  username:string;level:number;xp:number;coins:number;gems:number;tickets:number;luck:number;rollSpeed:number;
- inventoryCapacity:number;inventory:InventoryEntry[];equipped?:string;favorites:string[];skills:Record<string,number>;
+ inventoryCapacity:number;inventory:InventoryEntry[];equipped?:string;equippedItems?:string[];equippedSlots:number;favorites:string[];skills:Record<string,number>;
  upgrades:Record<string,number>;quests:Quest[];achievements:Achievement[];dailyRewards:boolean[];dailyClaimed:number;
  claimedCodes:string[];zones:string[];selectedZone:string;
  stats:{totalRolls:number;rollsToday:number;bestDenominator:number;bestItemId?:string;coinsEarned:number;coinsSpent:number;itemsSold:number;itemsEquipped:number;secretsFound:number;playSeconds:number;history:string[]};
