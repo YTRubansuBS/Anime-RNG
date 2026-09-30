@@ -112,9 +112,9 @@ function App(){
    const viewportHeight=420;
    const targetOffset=targetIndex*cardStep-(viewportHeight-82)/2;
    setWheelItems(reel);
-   setWheelOffset(targetOffset+900);
-   window.setTimeout(()=>setWheelOffset(targetOffset),45);
-   const delay=player.settings.animations&&!player.settings.reducedMotion?(high?2350:1750):180;
+   setWheelOffset(targetOffset+1250);
+   window.setTimeout(()=>setWheelOffset(targetOffset),35);
+   const delay=player.settings.animations&&!player.settings.reducedMotion?3000:180;
    window.setTimeout(()=>{
      setLastRoll(result);
      setResultOpen(true);
@@ -264,8 +264,8 @@ function App(){
 
  const unique=new Set(player.inventory.map(e=>e.itemId)).size;
  const best=ITEMS.find(x=>x.id===player.stats.bestItemId)||lastRoll||ITEMS[0];
- const equipped=ITEMS.find(x=>x.id===player.equipped)||ITEMS[0];
- const luck=player.luck+(player.boosts.luck&&player.boosts.luck>Date.now()?45:0);
+ const equipped=ITEMS.find(x=>x.id===(player.equippedItems?.[0]||player.equipped))||ITEMS[0];
+ const luck=player.luck+equippedLuckBonus(player)+(player.boosts.luck&&player.boosts.luck>Date.now()?45:0);
 
  if(!authReady){
    return <AuthGate loading configured={isSupabaseConfigured}/>;
