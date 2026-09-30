@@ -37,3 +37,6 @@ Le workflow .github/workflows/build.yml est prévu pour vérifier le build sur G
 - src/audio.ts : feedback audio.
 - src/App.tsx : pages et composants du jeu.
 - src/styles.css : direction artistique anime/neon et responsive.
+
+
+Build CI: TypeScript + Vite vérifiés à chaque push.
