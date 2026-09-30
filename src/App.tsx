@@ -1,8 +1,9 @@
-import {useEffect,useState,type CSSProperties,type Dispatch,type ReactNode,type SetStateAction} from "react";
+import {useEffect,useRef,useState,type CSSProperties,type Dispatch,type ReactNode,type SetStateAction} from "react";
 import type {Achievement,PlayerState,Rarity,RngItem,View} from "./types";
 import {ACHIEVEMENTS,CODES,DAILY_REWARD_CARDS,EVENTS,ITEMS,RARITIES,SHOP_PRODUCTS,SKILLS,TITLES,UPGRADES,ZONES} from "./data";
 import {formatNumber,gainXp,isRarer,nextXp,rollRng} from "./logic/rng";
-import {usePlayer,usePlayerTicker,xpPercent} from "./store";
+import {defaultPlayer,usePlayer,usePlayerTicker,xpPercent} from "./store";
+import {isSupabaseConfigured,saveAccountGame,supabase} from "./supabase";
 import {playRngTone} from "./audio";
 
 const NAV:{id:View;label:string;icon:string}[]=[
@@ -14,7 +15,57 @@ const RARITY_LIST:Rarity[]=["COMMON","UNCOMMON","RARE","EPIC","LEGENDARY","MYTHI
 
 function App(){
  const [player,setPlayer]=usePlayer();
+ const [accessMode,setAccessMode]=useState<"choice"|"local"|"account">("choice");
+ const [authUser,setAuthUser]=useState<any>(null);
+ const [authReady,setAuthReady]=useState(false);
+ const lastSavedAccount=useRef("");
+
  usePlayerTicker(setPlayer);
+
+ useEffect(()=>{
+   if(!supabase){
+     setAuthReady(true);
+     return;
+   }
+   let mounted=true;
+   supabase.auth.getSession().then(({data})=>{
+     if(!mounted)return;
+     const session=data.session;
+     if(session){
+       setAuthUser(session.user);
+       const saved=session.user.user_metadata?.anime_rng_save;
+       if(saved&&typeof saved==="object") setPlayer({...defaultPlayer,...saved});
+       setAccessMode("account");
+     }
+     setAuthReady(true);
+   });
+   const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+     if(!mounted)return;
+     if(session){
+       setAuthUser(session.user);
+       const saved=session.user.user_metadata?.anime_rng_save;
+       if(saved&&typeof saved==="object") setPlayer({...defaultPlayer,...saved});
+       setAccessMode("account");
+     }else{
+       setAuthUser(null);
+       setAccessMode("choice");
+     }
+   });
+   return()=>{mounted=false;subscription.unsubscribe();};
+ },[setPlayer]);
+
+ useEffect(()=>{
+   if(accessMode!=="account"||!authUser||!authReady||!supabase)return;
+   const payload={...player,stats:{...player.stats,playSeconds:0}};
+   const serialized=JSON.stringify(payload);
+   if(serialized===lastSavedAccount.current)return;
+   const timer=window.setTimeout(async()=>{
+     const {error}=await saveAccountGame(payload);
+     if(!error) lastSavedAccount.current=serialized;
+   },1200);
+   return()=>window.clearTimeout(timer);
+ },[player,accessMode,authUser,authReady]);
+
  const [view,setView]=useState<View>("roll");
  const [lastRoll,setLastRoll]=useState<RngItem|undefined>(()=>ITEMS.find(x=>x.id===player.equipped)||ITEMS[0]);
  const [resultOpen,setResultOpen]=useState(false);
@@ -47,7 +98,9 @@ function App(){
    if(player.settings.sfx)playRngTone("roll");
    setRolling(true);
    const result=rollRng(player,banner);
-   const high=["LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
+   const animationThreshold=Math.max(100,Math.floor(100*Math.pow(1.18,player.level-1)));
+   const ultraRare=["EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
+   const high=ultraRare&&result.denominator>=animationThreshold;
    const isNew=!player.inventory.some(e=>e.itemId===result.id);
    const xpGain=Math.max(5,Math.round(9+result.power/45));
    const predictedLevel=gainXp(player,xpGain).level;
@@ -196,6 +249,16 @@ function App(){
  const best=ITEMS.find(x=>x.id===player.stats.bestItemId)||lastRoll||ITEMS[0];
  const equipped=ITEMS.find(x=>x.id===player.equipped)||ITEMS[0];
  const luck=player.luck+(player.boosts.luck&&player.boosts.luck>Date.now()?45:0);
+
+ if(!authReady){
+   return <AuthGate loading configured={isSupabaseConfigured}/>;
+ }
+ if(accessMode==="choice"){
+   return <AuthGate configured={isSupabaseConfigured} onLocal={()=>{setAccessMode("local");setPlayer(defaultPlayer);}} onBack={()=>setAccessMode("choice")}/>;
+ }
+ if(accessMode==="account"&&!authUser){
+   return <AuthGate configured={isSupabaseConfigured} onLocal={()=>setAccessMode("local")}/>;
+ }
 
  return <div className={"min-h-screen bg-[#050611] text-white "+(player.settings.reducedMotion?"reduced-motion":"")}>
    <AmbientBackground enabled={player.settings.particles}/>
@@ -379,6 +442,49 @@ function AchievementsView({player}:{player:PlayerState}){return <div className="
 function StatsView({player,unique}:{player:PlayerState;unique:number}){const bars=[["COMMON",72],["UNCOMMON",15],["RARE",8],["EPIC",3],["LEGENDARY",1.3],["MYTHIC",.4],["DIVINE",.1],["CELESTIAL",.04],["TRANSCENDENT",.01],["SECRET",.001]];return <div className="page-shell"><PageHeading title="STATISTIQUES AVANCÉES" subtitle="Lecture détaillée de ta boucle RNG." icon="▥"/><div className="stats-grid">{[["TOTAL ROLLS",formatNumber(player.stats.totalRolls),"◉"],["ROLLS AUJOURD'HUI",formatNumber(player.stats.rollsToday),"↯"],["MEILLEUR 1/X","1/"+formatNumber(player.stats.bestDenominator),"☄"],["OBJETS VENDUS",formatNumber(player.stats.itemsSold),"◒"],["COINS GAGNÉS",formatNumber(player.stats.coinsEarned),"◈"],["COINS DÉPENSÉS",formatNumber(player.stats.coinsSpent),"↗"],["OBJETS ÉQUIPÉS",formatNumber(player.stats.itemsEquipped),"◎"],["SECRETS",formatNumber(player.stats.secretsFound),"⬢"],["COLLECTION",unique+"/"+ITEMS.length,"✦"]].map(([l,v,i])=><div className="stat-card" key={l}><span className="stat-icon">{i}</span><div><div className="stat-label">{l}</div><div className="stat-value">{v}</div></div></div>)}</div><div className="grid gap-4 lg:grid-cols-2"><Panel title="RÉPARTITION ESTIMÉE" icon="◈"><div className="space-y-3">{bars.map(([name,val])=><div key={name}><div className="flex justify-between text-xs text-white/45"><span>{name}</span><span>{val}%</span></div><div className="chart-track"><div className="chart-bar" style={{width:Math.min(100,Number(val))+"%"}}/></div></div>)}</div></Panel><Panel title="PITY TRACKER" icon="◌"><PityBar label="EPIC" current={player.pity.epic}/><PityBar label="LEGENDARY" current={player.pity.legendary}/><PityBar label="MYTHIC" current={player.pity.mythic}/></Panel></div></div>}
 
 function SettingsView({player,setPlayer}:{player:PlayerState;setPlayer:Dispatch<SetStateAction<PlayerState>>}){const toggle=(key:"music"|"sfx"|"animations"|"shake"|"particles"|"reducedMotion")=>setPlayer(p=>({...p,settings:{...p.settings,[key]:!p.settings[key]}}));return <div className="page-shell"><PageHeading title="SETTINGS" subtitle="Ton espace, ton rythme, ton niveau d'effets." icon="⚙"/><div className="settings-grid">{[["music","Musique","Fond sonore"],["sfx","Effets","Sons des interactions"],["animations","Animations","Transitions et feedback"],["shake","Screen Shake","Impact des drops"],["particles","Particules","Décor flottant"],["reducedMotion","Mode réduit","Limite les animations"]].map(([key,label,desc])=><button className="setting-card" key={key} onClick={()=>toggle(key as any)}><div><div className="font-display text-sm">{label}</div><div className="mt-1 text-xs text-white/35">{desc}</div></div><span className={"switch "+(player.settings[key as keyof PlayerState["settings"]]?"switch-on":"")}><span/></span></button>)}</div><div className="panel"><div className="panel-title">VOLUME</div><input type="range" min="0" max="100" value={player.settings.volume} onChange={e=>setPlayer(p=>({...p,settings:{...p.settings,volume:Number(e.target.value)}}))} className="w-full accent-indigo-400"/><div className="mt-2 text-xs text-white/35">{player.settings.volume}%</div></div><div className="danger-zone"><b>LOCAL SAVE</b><span>La progression est conservée dans le navigateur.</span><button className="danger-btn" onClick={()=>{localStorage.removeItem("anime-rng-player-v1");location.reload()}}>RESET SAVE</button></div></div>}
+
+function AuthGate({configured,onLocal,onBack,loading}:{configured:boolean;onLocal?:()=>void;onBack?:()=>void;loading?:boolean}){
+ const [mode,setMode]=useState<"login"|"signup">("login");
+ const [email,setEmail]=useState("");
+ const [password,setPassword]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [error,setError]=useState("");
+ const submit=async()=>{
+   if(!supabase){setError("Supabase n'est pas configuré. Ajoute URL et KEY dans les variables d'environnement.");return;}
+   if(!email||password.length<6){setError("Entre un email valide et un mot de passe d'au moins 6 caractères.");return;}
+   setBusy(true);setError("");
+   const result=mode==="login"
+     ? await supabase.auth.signInWithPassword({email,password})
+     : await supabase.auth.signUp({email,password});
+   setBusy(false);
+   if(result.error){setError(result.error.message);return;}
+   if(mode==="signup"&&!result.data.session){setError("Compte créé. Vérifie ton email puis connecte-toi.");return;}
+ };
+ if(loading)return <div className="min-h-screen bg-[#050611] grid place-items-center text-white"><div className="text-center"><div className="text-4xl">✦</div><div className="mt-4 font-display">CHARGEMENT...</div></div></div>;
+ return <div className="min-h-screen bg-[#050611] text-white grid place-items-center px-5">
+   <div className="w-full max-w-2xl">
+     <div className="text-center mb-8"><div className="text-5xl">✦</div><div className="mt-3 font-display text-4xl tracking-[.14em]">ANIME RNG</div><p className="mt-2 text-white/45">ASCEND BEYOND FATE</p></div>
+     <div className="panel p-6 sm:p-8">
+       <div className="text-center"><div className="eyebrow">SAUVEGARDE</div><h2 className="mt-2 text-2xl font-display">{mode==="login"?"REPRENDS TON DESTIN":"CRÉE TON COMPTE"}</h2><p className="mt-2 text-sm text-white/45">Choisis comment tu veux jouer.</p></div>
+       <div className="mt-7 grid gap-3 sm:grid-cols-2">
+         <button className="primary-btn py-4" onClick={onLocal}>🎮 JOUER EN LOCAL</button>
+         <button className="ghost-btn py-4" onClick={()=>document.getElementById("account-form")?.scrollIntoView({behavior:"smooth"})}>🔐 {mode==="login"?"SE CONNECTER":"CRÉER UN COMPTE"}</button>
+       </div>
+       <div id="account-form" className="mt-6 rounded-2xl border border-white/10 bg-white/[.03] p-5">
+         <div className="flex gap-2 mb-4"><button className={"filter-chip "+(mode==="login"?"filter-chip-active":"")} onClick={()=>setMode("login")}>CONNEXION</button><button className={"filter-chip "+(mode==="signup"?"filter-chip-active":"")} onClick={()=>setMode("signup")}>INSCRIPTION</button></div>
+         <div className="space-y-3">
+           <input className="field w-full" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+           <input className="field w-full" type="password" placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)}/>
+           {error&&<div className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
+           <button className="primary-btn w-full py-3" disabled={busy||!configured} onClick={submit}>{busy?"CHARGEMENT...":mode==="login"?"SE CONNECTER":"CRÉER MON COMPTE"}</button>
+           {!configured&&<p className="text-xs text-amber-200/70">Supabase non configuré : ajoute URL et KEY dans Vercel / ton environnement local.</p>}
+         </div>
+       </div>
+       <div className="mt-5 text-center text-xs text-white/30">Le mode local reste indépendant du compte.</div>
+     </div>
+   </div>
+ </div>;
+}
 
 function Panel({title,icon,children,className=""}:{title:string;icon:string;children:ReactNode;className?:string}){return <section className={"panel "+className}><div className="panel-title"><span>{icon}</span>{title}</div>{children}</section>}
 function PageHeading({title,subtitle,icon}:{title:string;subtitle:string;icon:string}){return <div className="page-heading"><div className="page-heading-icon">{icon}</div><div><div className="eyebrow">{title}</div><h2>{subtitle}</h2></div></div>}
