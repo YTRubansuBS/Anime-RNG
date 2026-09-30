@@ -9,10 +9,19 @@ export const nextXp=(level:number)=>Math.floor(250+Math.pow(level,1.55)*75);
 
 const passes=(item:RngItem,luck:number)=>randomInt(Math.max(1,Math.floor(item.denominator/Math.max(1,1+luck/100))))===0;
 
+const RARITY_LUCK:Record<Rarity,number>={
+ COMMON:0,UNCOMMON:2,RARE:5,EPIC:9,LEGENDARY:14,MYTHIC:20,DIVINE:27,CELESTIAL:35,TRANSCENDENT:45,SECRET:60
+};
+export const itemLuckBonus=(item:RngItem|undefined)=>item?RARITY_LUCK[item.rarity]:0;
+export const equippedLuckBonus=(player:PlayerState)=>{
+ const ids=player.equippedItems?.length?player.equippedItems:(player.equipped?[player.equipped]:[]);
+ return ids.reduce((sum,id)=>sum+itemLuckBonus(ITEMS.find(i=>i.id===id)),0);
+};
+
 export function rollRng(player:PlayerState,banner:RngItem["banner"]){
  const luckBoost=player.boosts.luck && player.boosts.luck>Date.now()?45:0;
  const superBoost=player.boosts.super && player.boosts.super>Date.now()?35:0;
- const luck=player.luck+luckBoost+superBoost+Object.values(player.upgrades).reduce((s,v)=>s+v*2,0);
+ const luck=player.luck+equippedLuckBonus(player)+luckBoost+superBoost+Object.values(player.upgrades).reduce((s,v)=>s+v*2,0);
  const pool=ITEMS.filter(i=>i.banner===banner||banner==="NORMAL"&&i.banner==="NORMAL").sort((a,b)=>b.denominator-a.denominator);
  const candidates=pool.length?pool:ITEMS;
  for(const item of candidates){
