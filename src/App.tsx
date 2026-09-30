@@ -3,6 +3,7 @@ import type {Achievement,PlayerState,Rarity,RngItem,View} from "./types";
 import {ACHIEVEMENTS,CODES,DAILY_REWARD_CARDS,EVENTS,ITEMS,RARITIES,SHOP_PRODUCTS,SKILLS,TITLES,UPGRADES,ZONES} from "./data";
 import {formatNumber,gainXp,isRarer,nextXp,rollRng} from "./logic/rng";
 import {usePlayer,usePlayerTicker,xpPercent} from "./store";
+import {playRngTone} from "./audio";
 
 const NAV:{id:View;label:string;icon:string}[]=[
  {id:"home",label:"Accueil",icon:"⌂"},{id:"roll",label:"Roll",icon:"✦"},{id:"collection",label:"Collection",icon:"◈"},{id:"inventory",label:"Inventaire",icon:"▦"},{id:"shop",label:"Shop",icon:"◒"},
@@ -39,6 +40,7 @@ function App(){
 
  const doRoll=()=>{
    if(rolling)return;
+   if(player.settings.sfx)playRngTone("roll");
    setRolling(true);
    const result=rollRng(player,banner);
    const high=["LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
@@ -78,7 +80,7 @@ function App(){
        return next;
      });
      setRolling(false);
-     if(high)notify("INCROYABLE ! "+result.chanceDisplay+" — "+result.name,true);
+     if(high){if(player.settings.sfx)playRngTone("rare");notify("INCROYABLE ! "+result.chanceDisplay+" — "+result.name,true);}
    },delay);
  };
 
