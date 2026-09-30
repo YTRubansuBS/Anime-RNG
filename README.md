@@ -40,3 +40,21 @@ Le workflow .github/workflows/build.yml est prévu pour vérifier le build sur G
 
 
 Build CI: TypeScript + Vite vérifiés à chaque push.
+
+## Connexion et sauvegarde
+
+- Écran de démarrage avec **Jouer en local** ou **Se connecter**.
+- Les comptes utilisent Supabase Auth.
+- La sauvegarde du jeu du compte est synchronisée dans les métadonnées de l'utilisateur Supabase.
+- Les variables d'environnement utilisées par Vite sont exactement `URL` et `KEY`.
+- En local, copie `.env.example` vers `.env` et renseigne ces deux valeurs.
+- Sur Vercel, ajoute `URL` et `KEY` dans les Environment Variables.
+- Le jeu ne contient pas la clé secrète/service-role : utilise uniquement la clé client publishable/anon.
+
+## Animations RNG adaptatives
+
+- Le résultat RNG est calculé avant l'animation.
+- Les résultats EPIC et plus peuvent déclencher l'animation ultra-rare si leur dénominateur atteint le seuil du joueur.
+- Le seuil commence à **1/100** et augmente progressivement avec le niveau.
+- Toutes les animations ultra-rares utilisent la même durée : **2350 ms**.
+- Les résultats devenus trop fréquents pour le niveau du joueur sont donc révélés plus rapidement sans modifier le résultat RNG.
