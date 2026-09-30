@@ -445,20 +445,28 @@ function SettingsView({player,setPlayer}:{player:PlayerState;setPlayer:Dispatch<
 
 function AuthGate({configured,onLocal,onBack,loading}:{configured:boolean;onLocal?:()=>void;onBack?:()=>void;loading?:boolean}){
  const [mode,setMode]=useState<"login"|"signup">("login");
- const [email,setEmail]=useState("");
+ const [username,setUsername]=useState("");
  const [password,setPassword]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const submit=async()=>{
    if(!supabase){setError("Supabase n'est pas configuré. Ajoute URL et KEY dans les variables d'environnement.");return;}
-   if(!email||password.length<6){setError("Entre un email valide et un mot de passe d'au moins 6 caractères.");return;}
-   setBusy(true);setError("");
-   const result=mode==="login"
-     ? await supabase.auth.signInWithPassword({email,password})
-     : await supabase.auth.signUp({email,password});
-   setBusy(false);
-   if(result.error){setError(result.error.message);return;}
-   if(mode==="signup"&&!result.data.session){setError("Compte créé. Vérifie ton email puis connecte-toi.");return;}
+   const cleanUsername=username.trim().toLowerCase();
+if(!/^[a-z0-9_-]{3,20}$/.test(cleanUsername)){setError("Le pseudo doit faire 3 à 20 caractères : lettres, chiffres, _ ou -.");return;}
+if(password.length<6){setError("Le mot de passe doit contenir au moins 6 caractères.");return;}
+setBusy(true);setError("");
+try{
+ const authEmail=cleanUsername+"@anime-rng.local";
+ const result=mode==="login"
+   ? await supabase.auth.signInWithPassword({email:authEmail,password})
+   : await supabase.auth.signUp({email:authEmail,password,options:{data:{username:cleanUsername}}});
+ setBusy(false);
+ if(result.error){setError(result.error.message);return;}
+ if(mode==="signup"&&!result.data.session){setError("Compte créé, mais Supabase demande une confirmation email. Désactive la confirmation email dans Supabase.");return;}
+}catch(e){
+ setBusy(false);
+ setError(e instanceof Error?e.message:"Connexion impossible.");
+}
  };
  if(loading)return <div className="min-h-screen bg-[#050611] grid place-items-center text-white"><div className="text-center"><div className="text-4xl">✦</div><div className="mt-4 font-display">CHARGEMENT...</div></div></div>;
  return <div className="min-h-screen bg-[#050611] text-white grid place-items-center px-5">
@@ -473,7 +481,7 @@ function AuthGate({configured,onLocal,onBack,loading}:{configured:boolean;onLoca
        <div id="account-form" className="mt-6 rounded-2xl border border-white/10 bg-white/[.03] p-5">
          <div className="flex gap-2 mb-4"><button className={"filter-chip "+(mode==="login"?"filter-chip-active":"")} onClick={()=>setMode("login")}>CONNEXION</button><button className={"filter-chip "+(mode==="signup"?"filter-chip-active":"")} onClick={()=>setMode("signup")}>INSCRIPTION</button></div>
          <div className="space-y-3">
-           <input className="field w-full" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+           <input className="field w-full" type="text" placeholder="Pseudo" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)}/>
            <input className="field w-full" type="password" placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)}/>
            {error&&<div className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
            <button className="primary-btn w-full py-3" disabled={busy||!configured} onClick={submit}>{busy?"CHARGEMENT...":mode==="login"?"SE CONNECTER":"CRÉER MON COMPTE"}</button>
