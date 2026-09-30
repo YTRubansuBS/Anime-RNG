@@ -20,7 +20,7 @@ export const defaultPlayer:PlayerState={
   {id:"starter-1",itemId:ITEMS[0].id,locked:true,favorite:false,obtainedAt:Date.now()-500000},
   {id:"starter-2",itemId:ITEMS[1].id,locked:false,favorite:true,obtainedAt:Date.now()-250000}
  ],
- equipped:ITEMS[1].id,favorites:[ITEMS[1].id],skills:{},upgrades:{},quests:seedQuests(),
+ equipped:ITEMS[1].id,equippedItems:[ITEMS[1].id],equippedSlots:1,favorites:[ITEMS[1].id],skills:{},upgrades:{},quests:seedQuests(),
  achievements:ACHIEVEMENTS.map(a=>({...a})),dailyRewards:[true,false,false,false,false,false,false],dailyClaimed:1,claimedCodes:[],
  zones:["Hidden Village"],selectedZone:"Hidden Village",
  stats:{totalRolls:0,rollsToday:0,bestDenominator:58,bestItemId:ITEMS[1].id,coinsEarned:0,coinsSpent:0,itemsSold:0,itemsEquipped:1,secretsFound:0,playSeconds:60,history:[ITEMS[1].id,ITEMS[0].id]},
@@ -32,7 +32,7 @@ export const readPlayer=():PlayerState=>{
  try{
   const raw=localStorage.getItem(STORAGE);if(!raw)return defaultPlayer;
   const p=JSON.parse(raw) as Partial<PlayerState>;
-  return {...defaultPlayer,...p,stats:{...defaultPlayer.stats,...(p.stats||{})},pity:{...defaultPlayer.pity,...(p.pity||{})},settings:{...defaultPlayer.settings,...(p.settings||{})},quests:p.quests||seedQuests(),achievements:p.achievements||ACHIEVEMENTS.map(a=>({...a})),inventory:p.inventory||defaultPlayer.inventory,skills:p.skills||{},upgrades:p.upgrades||{}};
+  return {...defaultPlayer,...p,equippedItems:p.equippedItems?.length?p.equippedItems:(p.equipped?[p.equipped]:defaultPlayer.equippedItems),equippedSlots:Math.min(5,Math.max(1,p.equippedSlots||1)),stats:{...defaultPlayer.stats,...(p.stats||{})},pity:{...defaultPlayer.pity,...(p.pity||{})},settings:{...defaultPlayer.settings,...(p.settings||{})},quests:p.quests||seedQuests(),achievements:p.achievements||ACHIEVEMENTS.map(a=>({...a})),inventory:p.inventory||defaultPlayer.inventory,skills:p.skills||{},upgrades:p.upgrades||{}};
  }catch{return defaultPlayer;}
 };
 
