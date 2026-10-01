@@ -12,6 +12,12 @@ const passes=(item:RngItem,luck:number)=>randomInt(Math.max(1,Math.floor(item.de
 const RARITY_LUCK:Record<Rarity,number>={
  COMMON:0,UNCOMMON:2,RARE:5,EPIC:9,LEGENDARY:14,MYTHIC:20,DIVINE:27,CELESTIAL:35,TRANSCENDENT:45,SECRET:60
 };
+
+export const PITY_THRESHOLDS:Record<"EPIC"|"LEGENDARY"|"MYTHIC",number>={
+ EPIC:100,
+ LEGENDARY:250,
+ MYTHIC:500
+};
 export const itemLuckBonus=(item:RngItem|undefined)=>item?RARITY_LUCK[item.rarity]:0;
 export const equippedLuckBonus=(player:PlayerState)=>{
  const ids=player.equippedItems?.length?player.equippedItems:(player.equipped?[player.equipped]:[]);
@@ -23,10 +29,25 @@ export function rollRng(player:PlayerState,banner:RngItem["banner"]){
  const superBoost=player.boosts.super && player.boosts.super>Date.now()?35:0;
  const luck=player.luck+equippedLuckBonus(player)+luckBoost+superBoost+Object.values(player.upgrades).reduce((s,v)=>s+v*2,0);
  const pool=ITEMS.filter(i=>i.banner===banner||banner==="NORMAL"&&i.banner==="NORMAL").sort((a,b)=>b.denominator-a.denominator);
+
+ // Pity is a real guarantee, not just a hidden luck boost.
+ // Higher-rarity pity takes priority and can still trigger from any banner.
+ const pityTarget=player.pity.mythic>=PITY_THRESHOLDS.MYTHIC?"MYTHIC"
+   :player.pity.legendary>=PITY_THRESHOLDS.LEGENDARY?"LEGENDARY"
+   :player.pity.epic>=PITY_THRESHOLDS.EPIC?"EPIC"
+   :undefined;
+ if(pityTarget){
+   const guaranteed=ITEMS.filter(item=>item.rarity===pityTarget);
+   if(guaranteed.length) return guaranteed[randomInt(guaranteed.length)];
+ }
+
  const candidates=pool.length?pool:ITEMS;
  for(const item of candidates){
-  const pity=item.rarity==="EPIC"&&player.pity.epic>=95?20:item.rarity==="LEGENDARY"&&player.pity.legendary>=95?25:item.rarity==="MYTHIC"&&player.pity.mythic>=95?30:0;
-  if(passes(item,luck+pity)) return item;
+  const pityBoost=item.rarity==="EPIC"&&player.pity.epic>=95?20
+    :item.rarity==="LEGENDARY"&&player.pity.legendary>=240?25
+    :item.rarity==="MYTHIC"&&player.pity.mythic>=490?30
+    :0;
+  if(passes(item,luck+pityBoost)) return item;
  }
  const commons=ITEMS.filter(i=>i.rarity==="COMMON");
  return commons[randomInt(commons.length)];
