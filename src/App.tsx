@@ -127,7 +127,7 @@ function App(){
        let next:PlayerState={...p,
          inventory:inv,
          coins:p.coins+result.value,
-         pity:{epic:epicDone?0:Math.min(100,p.pity.epic+1),legendary:legendaryDone?0:Math.min(100,p.pity.legendary+1),mythic:mythicDone?0:Math.min(100,p.pity.mythic+1)},
+         pity:{epic:epicDone?0:Math.min(100,p.pity.epic+1),legendary:legendaryDone?0:Math.min(250,p.pity.legendary+1),mythic:mythicDone?0:Math.min(500,p.pity.mythic+1)},
          stats:{...p.stats,totalRolls:p.stats.totalRolls+1,rollsToday:p.stats.rollsToday+1,coinsEarned:p.stats.coinsEarned+result.value,
            bestDenominator:Math.max(p.stats.bestDenominator,result.denominator),
            bestItemId:isRarer(result,ITEMS.find(i=>i.id===p.stats.bestItemId))?result.id:p.stats.bestItemId,
