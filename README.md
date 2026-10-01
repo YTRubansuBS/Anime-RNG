@@ -58,3 +58,18 @@ Build CI: TypeScript + Vite vérifiés à chaque push.
 - Le seuil commence à **1/100** et augmente progressivement avec le niveau.
 - Toutes les animations ultra-rares utilisent la même durée : **2350 ms**.
 - Les résultats devenus trop fréquents pour le niveau du joueur sont donc révélés plus rapidement sans modifier le résultat RNG.
+
+
+## Admin Panel
+
+Le panneau **Admin Panel** permet au compte administrateur de donner une récompense à un joueur précis sans passer par le navigateur du joueur.
+
+Variables Vercel nécessaires :
+- `URL` : URL Supabase déjà utilisée par le jeu.
+- `KEY` : clé client Supabase déjà utilisée par le jeu.
+- `SUPABASE_SERVICE_ROLE_KEY` : clé **service role secrète**, uniquement côté serveur Vercel. Ne la mets jamais dans `VITE_` ou dans le code du navigateur.
+- `ADMIN_USER_ID` : UUID Supabase du compte qui doit avoir accès au panneau admin.
+
+Dans le jeu, le panneau apparaît dans **MENU → Admin Panel** uniquement après la vérification serveur du compte administrateur.
+
+Le panneau permet notamment d'ajouter des **coins, gems, tickets, XP, auras**, de définir la **pity Epic / Legendary / Mythic** et de débloquer toutes les zones pour le joueur ciblé.
