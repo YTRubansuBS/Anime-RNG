@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type CSSProperties,type Dispatch,type ReactNod
 import type {Achievement,PlayerState,Rarity,RngItem,View} from "./types";
 import {ACHIEVEMENTS,CODES,DAILY_REWARD_CARDS,EVENTS,ITEMS,RARITIES,SHOP_PRODUCTS,SKILLS,TITLES,UPGRADES,ZONES} from "./data";
 import {equippedLuckBonus,formatNumber,gainXp,isRarer,nextXp,rollRng} from "./logic/rng";
-import {defaultPlayer,usePlayer,usePlayerTicker,xpPercent} from "./store";
+import {defaultPlayer,normalizePlayer,usePlayer,usePlayerTicker,xpPercent} from "./store";
 import {isSupabaseConfigured,saveAccountGame,supabase} from "./supabase";
 import {playRngTone} from "./audio";
 
@@ -34,7 +34,8 @@ function App(){
      if(session){
        setAuthUser(session.user);
        const saved=session.user.user_metadata?.anime_rng_save;
-       if(saved&&typeof saved==="object") setPlayer({...defaultPlayer,...saved});
+       const username=String(session.user.user_metadata?.username||session.user.email?.split("@")[0]||defaultPlayer.username);
+       setPlayer(normalizePlayer(saved&&typeof saved==="object"?saved:{...defaultPlayer,username}));
        setAccessMode("account");
      }
      setAuthReady(true);
@@ -44,7 +45,8 @@ function App(){
      if(session){
        setAuthUser(session.user);
        const saved=session.user.user_metadata?.anime_rng_save;
-       if(saved&&typeof saved==="object") setPlayer({...defaultPlayer,...saved});
+       const username=String(session.user.user_metadata?.username||session.user.email?.split("@")[0]||defaultPlayer.username);
+       setPlayer(normalizePlayer(saved&&typeof saved==="object"?saved:{...defaultPlayer,username}));
        setAccessMode("account");
      }else{
        setAuthUser(null);
@@ -53,6 +55,30 @@ function App(){
    });
    return()=>{mounted=false;subscription.unsubscribe();};
  },[setPlayer]);
+
+ useEffect(()=>{
+   if(accessMode!=="account"||!authUser||!supabase){
+     setIsAdmin(false);
+     return;
+   }
+   let active=true;
+   supabase.auth.getSession().then(async ({data})=>{
+     const token=data.session?.access_token;
+     if(!token)return;
+     try{
+       const response=await fetch("/api/admin",{
+         method:"POST",
+         headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+         body:JSON.stringify({action:"check"})
+       });
+       const json=await response.json().catch(()=>({}));
+       if(active)setIsAdmin(response.ok&&json.isAdmin===true);
+     }catch{
+       if(active)setIsAdmin(false);
+     }
+   });
+   return()=>{active=false;};
+ },[accessMode,authUser,authReady]);
 
  useEffect(()=>{
    if(accessMode!=="account"||!authUser||!authReady||!supabase)return;
@@ -74,6 +100,8 @@ function App(){
  const [wheelOffset,setWheelOffset]=useState(0);
  const [menuOpen,setMenuOpen]=useState(false);
  const [eventOpen,setEventOpen]=useState(false);
+ const [adminOpen,setAdminOpen]=useState(false);
+ const [isAdmin,setIsAdmin]=useState(false);
  const [autoRoll,setAutoRoll]=useState(false);
  const [banner,setBanner]=useState<RngItem["banner"]>("NORMAL");
  const [query,setQuery]=useState("");
@@ -284,7 +312,7 @@ function App(){
    return <AuthGate loading configured={isSupabaseConfigured}/>;
  }
  if(accessMode==="choice"){
-   return <AuthGate configured={isSupabaseConfigured} onLocal={()=>{setAccessMode("local");setPlayer(defaultPlayer);}} onBack={()=>setAccessMode("choice")}/>;
+   return <AuthGate configured={isSupabaseConfigured} onLocal={()=>setAccessMode("local")} onBack={()=>setAccessMode("choice")}/>;
  }
  if(accessMode==="account"&&!authUser){
    return <AuthGate configured={isSupabaseConfigured} onLocal={()=>setAccessMode("local")}/>;
@@ -317,7 +345,8 @@ function App(){
    {codeOpen&&<Modal title="CODES" close={()=>setCodeOpen(false)}><div className="space-y-5"><p className="text-sm text-white/55">Entre un code pour recevoir des coins, gems ou tickets.</p><div className="flex gap-2"><input className="field flex-1" placeholder="Entre ton code..." value={codeInput} onChange={e=>setCodeInput(e.target.value)}/><button className="primary-btn" onClick={redeem}>VALIDER</button></div><div className="grid gap-3 sm:grid-cols-3">{Object.keys(CODES).map(c=><button key={c} className="mini-card text-left" onClick={()=>setCodeInput(c)}>{c}<span className="mt-1 block text-xs text-white/35">Cliquer pour remplir</span></button>)}</div></div></Modal>}
    {sellConfirm&&<Modal title="VENTE MULTIPLE" close={()=>setSellConfirm(false)}><p className="text-sm text-white/55">Vendre {selected.length} objet(s) sélectionné(s) ? Favoris et verrouillés sont ignorés.</p><div className="mt-5 flex justify-end gap-3"><button className="ghost-btn" onClick={()=>setSellConfirm(false)}>ANNULER</button><button className="danger-btn" onClick={sellSelected}>VENDRE</button></div></Modal>}
    {zoneOpen&&<Modal title="ZONES • CHOISIS TA DESTINATION" close={()=>setZoneOpen(false)}><div className="grid gap-3 md:grid-cols-2">{ZONES.map(z=>{const unlocked=player.zones.includes(z.name);const cost=2500*(z.index+1);return <button className={"zone-card "+(unlocked?"zone-card-active":"")} key={z.id} onClick={()=>{unlockZone(z.name,z.index);setZoneOpen(false)}}><div className="flex items-center justify-between gap-3"><div className="text-left"><div className="font-display text-sm">{z.name}</div><div className="mt-1 text-xs text-white/40">{z.description}</div></div><span className="badge whitespace-nowrap">{unlocked?"DÉBLOQUÉE":formatNumber(cost)+" ◈"}</span></div><div className="mt-4 flex justify-between text-xs text-white/35"><span>{z.bonus}</span><span>Zone {z.index+1}/7</span></div></button>})}</div></Modal>}
-   {menuOpen&&<MenuPanel player={player} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}}/>}
+   {menuOpen&&<MenuPanel player={player} isAdmin={isAdmin} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}} openAdmin={()=>{setMenuOpen(false);setAdminOpen(true)}}/>}
+   {adminOpen&&isAdmin&&<AdminPanel player={player} authUser={authUser} setPlayer={setPlayer} close={()=>setAdminOpen(false)}/>}
    {eventOpen&&<Modal title="EVENTS • LUCKY FESTIVAL" close={()=>setEventOpen(false)}><div className="event-spotlight"><div className="event-kicker">TEMPS LIMITÉ • ACTIF MAINTENANT</div><div className="event-spotlight-title">{EVENTS[0].title}</div><p>{EVENTS[0].description}</p><div className="event-spotlight-grid"><div><span>BONUS</span><b>{EVENTS[0].bonus}</b></div><div><span>DURÉE</span><b>{EVENTS[0].duration}</b></div></div></div></Modal>}
    {tutorial&&<Modal title={["BIENVENUE","PREMIER ROLL","COLLECTION","ÉQUIPE TON DROP","PROGRESSE","CONTINUE"][tutorialStep]} close={finishTutorial}><div className="space-y-5"><div className="tutorial-orb"><span>{tutorialStep+1}</span></div><p className="text-sm leading-7 text-white/65">{[
      "Ta chasse commence maintenant. Chaque roll peut révéler une aura originale.",
@@ -389,7 +418,7 @@ function MobileNav({view,setView,openMenu}:{view:View;setView:(v:View)=>void;ope
  </nav>
 }
 
-function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player:PlayerState;close:()=>void;setView:(v:View)=>void;openCodes:()=>void;openZones:()=>void;openEvents:()=>void}){
+function MenuPanel({player,isAdmin,close,setView,openCodes,openZones,openEvents,openAdmin}:{player:PlayerState;isAdmin:boolean;close:()=>void;setView:(v:View)=>void;openCodes:()=>void;openZones:()=>void;openEvents:()=>void;openAdmin:()=>void}){
  const items:{label:string;icon:string;view?:View;action?:()=>void;desc:string}[]=[
   {label:"Accueil",icon:"⌂",view:"home",desc:"Vue d'ensemble"},
   {label:"Skills",icon:"⚡",view:"skills",desc:"Arbre de compétences"},
@@ -403,6 +432,7 @@ function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player
   {label:"Zones",icon:"🌌",action:openZones,desc:"Changer de monde"},
   {label:"Events",icon:"🔥",action:openEvents,desc:"Événements actifs"},
   {label:"Settings",icon:"⚙️",view:"settings",desc:"Préférences"},
+  ...(isAdmin?[{label:"Admin Panel",icon:"🛠️",action:openAdmin,desc:"Gérer les récompenses"}]:[]),
  ];
  const go=(item:(typeof items)[number])=>{if(item.view)setView(item.view);item.action?.();if(item.view||item.action)close();};
  return <div className="menu-overlay" onMouseDown={e=>{if(e.currentTarget===e.target)close()}}>
@@ -412,6 +442,90 @@ function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player
    <div className="menu-grid">{items.map(item=><button className="menu-card" key={item.label} onClick={()=>go(item)}><span className="menu-icon">{item.icon}</span><span className="menu-card-copy"><b>{item.label}</b><small>{item.desc}</small></span><span className="menu-arrow">→</span></button>)}</div>
   </div>
  </div>
+}
+
+function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUser:any;setPlayer:Dispatch<SetStateAction<PlayerState>>;close:()=>void}){
+ const [targetUsername,setTargetUsername]=useState("");
+ const [auraSearch,setAuraSearch]=useState("");
+ const [auraId,setAuraId]=useState("");
+ const [auraQuantity,setAuraQuantity]=useState("1");
+ const [coins,setCoins]=useState("0");
+ const [gems,setGems]=useState("0");
+ const [tickets,setTickets]=useState("0");
+ const [xp,setXp]=useState("0");
+ const [epic,setEpic]=useState("");
+ const [legendary,setLegendary]=useState("");
+ const [mythic,setMythic]=useState("");
+ const [unlockAllZones,setUnlockAllZones]=useState(false);
+ const [busy,setBusy]=useState(false);
+ const [status,setStatus]=useState("");
+ const [error,setError]=useState("");
+ const choices=ITEMS.filter(i=>i.name.toLowerCase().includes(auraSearch.toLowerCase())).slice(0,12);
+ const grant=async()=>{
+   setBusy(true);setStatus("");setError("");
+   try{
+     if(!targetUsername.trim())throw new Error("Pseudo cible requis.");
+     const session=(await supabase?.auth.getSession())?.data.session;
+     if(!session?.access_token)throw new Error("Session admin introuvable.");
+     const response=await fetch("/api/admin",{
+       method:"POST",
+       headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},
+       body:JSON.stringify({
+         action:"grant",
+         targetUsername:targetUsername.trim(),
+         auraId,
+         auraQuantity:Number(auraQuantity)||0,
+         coins:Number(coins)||0,
+         gems:Number(gems)||0,
+         tickets:Number(tickets)||0,
+         xp:Number(xp)||0,
+         pity_epic:epic===""?undefined:Number(epic),
+         pity_legendary:legendary===""?undefined:Number(legendary),
+         pity_mythic:mythic===""?undefined:Number(mythic),
+         unlockAllZones
+       })
+     });
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||"Erreur admin.");
+     const currentUsername=String(authUser?.user_metadata?.username||player.username).toLowerCase();
+     if(String(data.target?.username||"").toLowerCase()===currentUsername&&data.save)setPlayer(normalizePlayer(data.save));
+     setStatus("✅ Récompense envoyée à "+data.target.username+".");
+   }catch(e){
+     setError(e instanceof Error?e.message:"Erreur inconnue.");
+   }finally{
+     setBusy(false);
+   }
+ };
+ return <Modal title="ADMIN PANEL • RÉCOMPENSES" close={close}>
+  <div className="space-y-4">
+   <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-4 text-xs text-white/55"><b className="text-white">Admin sécurisé</b><br/>Cette interface ne fonctionne que pour le compte administrateur configuré côté serveur.</div>
+   <input className="field w-full" placeholder="Pseudo du joueur cible" value={targetUsername} onChange={e=>setTargetUsername(e.target.value)}/>
+   <div className="grid gap-3 sm:grid-cols-3">
+    <input className="field" type="number" min="0" placeholder="Coins" value={coins} onChange={e=>setCoins(e.target.value)}/>
+    <input className="field" type="number" min="0" placeholder="Gems" value={gems} onChange={e=>setGems(e.target.value)}/>
+    <input className="field" type="number" min="0" placeholder="Tickets" value={tickets} onChange={e=>setTickets(e.target.value)}/>
+   </div>
+   <input className="field w-full" type="number" min="0" placeholder="XP à ajouter" value={xp} onChange={e=>setXp(e.target.value)}/>
+   <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+    <div className="font-display text-sm">AURA À DONNER</div>
+    <input className="field mt-3 w-full" placeholder="Rechercher une aura..." value={auraSearch} onChange={e=>setAuraSearch(e.target.value)}/>
+    <div className="mt-3 grid gap-2 sm:grid-cols-2 max-h-52 overflow-auto">{choices.map(item=><button key={item.id} className={"mini-card text-left "+(auraId===item.id?"ring-2 ring-white/30":"")} onClick={()=>setAuraId(item.id)}>{item.icon} {item.name}<span className="block text-xs text-white/35">{item.rarity} • {item.chanceDisplay}</span></button>)}</div>
+    <div className="mt-3 flex gap-2"><input className="field flex-1" type="number" min="0" max="100" placeholder="Quantité" value={auraQuantity} onChange={e=>setAuraQuantity(e.target.value)}/><div className="mini-card flex-1">{auraId?ITEMS.find(i=>i.id===auraId)?.name:"Aucune aura sélectionnée"}</div></div>
+   </div>
+   <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+    <div className="font-display text-sm">PITY À DÉFINIR</div>
+    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+     <input className="field" type="number" min="0" max="100" placeholder="Epic / 100" value={epic} onChange={e=>setEpic(e.target.value)}/>
+     <input className="field" type="number" min="0" max="250" placeholder="Legendary / 250" value={legendary} onChange={e=>setLegendary(e.target.value)}/>
+     <input className="field" type="number" min="0" max="500" placeholder="Mythic / 500" value={mythic} onChange={e=>setMythic(e.target.value)}/>
+    </div>
+   </div>
+   <label className="setting-card cursor-pointer"><div><div className="font-display text-sm">Débloquer toutes les zones</div><div className="text-xs text-white/35">Ajoute toutes les zones sans retirer les autres données.</div></div><input type="checkbox" checked={unlockAllZones} onChange={e=>setUnlockAllZones(e.target.checked)}/></label>
+   {error&&<div className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
+   {status&&<div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">{status}</div>}
+   <button className="primary-btn w-full py-3" disabled={busy} onClick={grant}>{busy?"ENVOI...":"🎁 DONNER LA RÉCOMPENSE"}</button>
+  </div>
+ </Modal>
 }
 
 function HomeView({player,best,equipped,setView,openZones}:{player:PlayerState;best:RngItem;equipped:RngItem;setView:(v:View)=>void;openZones:()=>void}){return <div className="page-shell"><section className="hero-panel"><div className="hero-copy"><div className="eyebrow"><span>✦</span> YOUR FATE IS WAITING</div><h1>Roll. Discover.<br/><span>Transcend.</span></h1><p>Une boucle RNG 2D originale où chaque roll peut devenir ton nouveau drop préféré. La vraie obsession : voir jusqu’où va ton prochain <b>1/X</b>.</p><div className="hero-buttons"><button className="primary-btn primary-lg" onClick={()=>setView("roll")}>PLAY RNG <span>→</span></button><button className="ghost-btn" onClick={openZones}>CHOISIR UNE ZONE</button></div><div className="hero-stats"><StatInline label="ROLLS" value={formatNumber(player.stats.totalRolls)}/><StatInline label="COLLECTION" value={new Set(player.inventory.map(e=>e.itemId)).size+" / "+ITEMS.length}/><StatInline label="BEST 1/X" value={"1/"+formatNumber(player.stats.bestDenominator)}/></div></div><div className="hero-art"><div className="hero-ring ring-1"/><div className="hero-ring ring-2"/><div className="hero-ring ring-3"/><div className="hero-core"><div className="core-label">EQUIPPED</div><div className="core-icon">{equipped.icon}</div><div className="core-name">{equipped.name}</div><ChanceBadge item={equipped} large/><RarityBadge rarity={equipped.rarity}/></div><div className="floating-card floating-best"><span>BEST DROP</span><b>{best.name}</b><small>{best.chanceDisplay}</small></div><div className="floating-card floating-event"><span>EVENT</span><b>{EVENTS[0].title}</b><small>{EVENTS[0].bonus}</small></div></div></section><section className="grid gap-4 xl:grid-cols-3"><Panel title="TA PROGRESSION" icon="↗" className="xl:col-span-2"><div className="grid gap-3 sm:grid-cols-3"><BigStat title="Luck" value={"+"+player.luck+"%"} hint="Chance de base" icon="✦"/><BigStat title="Roll Speed" value={player.rollSpeed.toFixed(2)+"x"} hint="Cadence" icon="↯"/><BigStat title="Play Time" value={formatDuration(player.stats.playSeconds)} hint="Temps de jeu" icon="◷"/></div><div className="mt-5 rounded-2xl border border-white/10 bg-white/[.025] p-4"><div className="mb-2 flex justify-between text-xs uppercase tracking-[.18em] text-white/45"><span>XP vers niveau {player.level+1}</span><span>{Math.round(xpPercent(player))}%</span></div><div className="xp-track"><div className="xp-fill" style={{width:xpPercent(player)+"%"}}/></div><div className="mt-2 text-xs text-white/35">{formatNumber(player.xp)} / {formatNumber(nextXp(player.level))} XP</div></div></Panel><Panel title="BOOSTS ACTIFS" icon="⚡"><BoostList player={player}/></Panel></section><section className="grid gap-4 xl:grid-cols-2"><Panel title="DERNIÈRES DÉCOUVERTES" icon="✦"><div className="grid gap-2 sm:grid-cols-2">{player.stats.history.slice(0,6).map((id,i)=><RngRow key={id+"-"+i} item={ITEMS.find(x=>x.id===id)} compact/>)}</div></Panel><Panel title="LUCKY FESTIVAL" icon="✺"><div className="event-card"><div><div className="event-kicker">ÉVÉNEMENT ACTIF</div><h3>{EVENTS[0].title}</h3><p>{EVENTS[0].description}</p></div><div className="event-bonus">{EVENTS[0].bonus}<span>{EVENTS[0].duration}</span></div></div></Panel></section></div>}
