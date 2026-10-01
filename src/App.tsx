@@ -125,13 +125,13 @@ function App(){
      const entry={id:String(Date.now())+"-"+Math.random(),itemId:result.id,locked:false,favorite:false,obtainedAt:Date.now()};
      setPlayer(p=>{
        const inv=[...p.inventory,entry].slice(-p.inventoryCapacity);
-       const epicDone=["EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
+       const divineDone=["DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
        const legendaryDone=["LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
        const mythicDone=["MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"].includes(result.rarity);
        let next:PlayerState={...p,
          inventory:inv,
          coins:p.coins+result.value,
-         pity:{epic:epicDone?0:Math.min(100,p.pity.epic+1),legendary:legendaryDone?0:Math.min(250,p.pity.legendary+1),mythic:mythicDone?0:Math.min(500,p.pity.mythic+1)},
+         pity:{legendary:legendaryDone?0:Math.min(100,p.pity.legendary+1),mythic:mythicDone?0:Math.min(250,p.pity.mythic+1),divine:divineDone?0:Math.min(499,p.pity.divine+1)},
          stats:{...p.stats,totalRolls:p.stats.totalRolls+1,rollsToday:p.stats.rollsToday+1,coinsEarned:p.stats.coinsEarned+result.value,
            bestDenominator:Math.max(p.stats.bestDenominator,result.denominator),
            bestItemId:isRarer(result,ITEMS.find(i=>i.id===p.stats.bestItemId))?result.id:p.stats.bestItemId,
@@ -431,7 +431,7 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
  const [gems,setGems]=useState("0");
  const [tickets,setTickets]=useState("0");
  const [xp,setXp]=useState("0");
- const [epic,setEpic]=useState("");
+ const [divine,setDivine]=useState("");
  const [legendary,setLegendary]=useState("");
  const [mythic,setMythic]=useState("");
  const [unlockAllZones,setUnlockAllZones]=useState(false);
@@ -469,9 +469,9 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
          gems:Number(gems)||0,
          tickets:Number(tickets)||0,
          xp:Number(xp)||0,
-         pity_epic:epic===""?undefined:Number(epic),
          pity_legendary:legendary===""?undefined:Number(legendary),
          pity_mythic:mythic===""?undefined:Number(mythic),
+         pity_divine:divine===""?undefined:Number(divine),
          unlockAllZones
        })
      });
@@ -512,9 +512,9 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
    <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
     <div className="font-display text-sm">PITY À DÉFINIR</div>
     <div className="mt-3 grid gap-3 sm:grid-cols-3">
-     <input className="field" type="number" min="0" max="100" placeholder="Epic / 100" value={epic} onChange={e=>setEpic(e.target.value)}/>
-     <input className="field" type="number" min="0" max="250" placeholder="Legendary / 250" value={legendary} onChange={e=>setLegendary(e.target.value)}/>
-     <input className="field" type="number" min="0" max="500" placeholder="Mythic / 500" value={mythic} onChange={e=>setMythic(e.target.value)}/>
+     <input className="field" type="number" min="0" max="100" placeholder="Legendary / 100" value={legendary} onChange={e=>setLegendary(e.target.value)}/>
+     <input className="field" type="number" min="0" max="250" placeholder="Mythic / 250" value={mythic} onChange={e=>setMythic(e.target.value)}/>
+     <input className="field" type="number" min="0" max="499" placeholder="Divine / 499" value={divine} onChange={e=>setDivine(e.target.value)}/>
     </div>
    </div>
    <label className="setting-card cursor-pointer"><div><div className="font-display text-sm">Débloquer toutes les zones</div><div className="text-xs text-white/35">Ajoute toutes les zones sans retirer les autres données.</div></div><input type="checkbox" checked={unlockAllZones} onChange={e=>setUnlockAllZones(e.target.checked)}/></label>
@@ -543,7 +543,7 @@ function RollView({player,lastRoll,luck,rolling,autoRoll,setAutoRoll,banner,setB
    </section>
    <aside className="roll-side-stack">
     <Panel title="BOOSTS ACTIFS" icon="⚡"><BoostList player={player}/></Panel>
-    <Panel title="PITY" icon="◌"><div className="space-y-3"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={501}/></div></Panel>
+    <Panel title="PITY" icon="◌"><div className="space-y-3"><<PityBar label="LEGENDARY" current={player.pity.legendary} max={100}/><PityBar label="MYTHIC" current={player.pity.mythic} max={250}/><PityBar label="DIVINE" current={player.pity.divine} max={499}/></div></Panel>
     <Panel title="DROP ÉQUIPÉ" icon="◈"><RngFeature item={equipped}/></Panel>
    </aside>
   </div>
@@ -603,7 +603,7 @@ function LeaderboardView({best}:{best:RngItem}){const [mode,setMode]=useState<"R
 
 function AchievementsView({player}:{player:PlayerState}){return <div className="page-shell"><PageHeading title="SUCCÈS" subtitle="Chaque jalon pousse ton profil plus loin." icon="✹"/><div className="achievement-grid">{player.achievements.map(a=><div className={"achievement-card "+(a.unlocked?"achievement-unlocked":"")} key={a.id}><div className="achievement-icon">{a.unlocked?"✹":"?"}</div><div className="min-w-0 flex-1"><div className="font-display text-sm tracking-wider">{a.title}</div><p className="mt-1 text-xs text-white/40">{a.description}</p><div className="mt-3 flex justify-between text-[10px] text-white/35"><span>+{formatNumber(a.rewardCoins)} ◈</span><span>{a.unlocked?"DÉBLOQUÉ":"VERROUILLÉ"}</span></div></div></div>)}</div></div>}
 
-function StatsView({player,unique}:{player:PlayerState;unique:number}){const bars=[["COMMON",72],["UNCOMMON",15],["RARE",8],["EPIC",3],["LEGENDARY",1.3],["MYTHIC",.4],["DIVINE",.1],["CELESTIAL",.04],["TRANSCENDENT",.01],["SECRET",.001]];return <div className="page-shell"><PageHeading title="STATISTIQUES AVANCÉES" subtitle="Lecture détaillée de ta boucle RNG." icon="▥"/><div className="stats-grid">{[["TOTAL ROLLS",formatNumber(player.stats.totalRolls),"◉"],["ROLLS AUJOURD'HUI",formatNumber(player.stats.rollsToday),"↯"],["MEILLEUR 1/X","1/"+formatNumber(player.stats.bestDenominator),"☄"],["OBJETS VENDUS",formatNumber(player.stats.itemsSold),"◒"],["COINS GAGNÉS",formatNumber(player.stats.coinsEarned),"◈"],["COINS DÉPENSÉS",formatNumber(player.stats.coinsSpent),"↗"],["OBJETS ÉQUIPÉS",formatNumber(player.stats.itemsEquipped),"◎"],["SECRETS",formatNumber(player.stats.secretsFound),"⬢"],["COLLECTION",unique+"/"+ITEMS.length,"✦"]].map(([l,v,i])=><div className="stat-card" key={l}><span className="stat-icon">{i}</span><div><div className="stat-label">{l}</div><div className="stat-value">{v}</div></div></div>)}</div><div className="grid gap-4 lg:grid-cols-2"><Panel title="RÉPARTITION ESTIMÉE" icon="◈"><div className="space-y-3">{bars.map(([name,val])=><div key={name}><div className="flex justify-between text-xs text-white/45"><span>{name}</span><span>{val}%</span></div><div className="chart-track"><div className="chart-bar" style={{width:Math.min(100,Number(val))+"%"}}/></div></div>)}</div></Panel><Panel title="PITY TRACKER" icon="◌"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={500}/></Panel></div></div>}
+function StatsView({player,unique}:{player:PlayerState;unique:number}){const bars=[["COMMON",72],["UNCOMMON",15],["RARE",8],["EPIC",3],["LEGENDARY",1.3],["MYTHIC",.4],["DIVINE",.1],["CELESTIAL",.04],["TRANSCENDENT",.01],["SECRET",.001]];return <div className="page-shell"><PageHeading title="STATISTIQUES AVANCÉES" subtitle="Lecture détaillée de ta boucle RNG." icon="▥"/><div className="stats-grid">{[["TOTAL ROLLS",formatNumber(player.stats.totalRolls),"◉"],["ROLLS AUJOURD'HUI",formatNumber(player.stats.rollsToday),"↯"],["MEILLEUR 1/X","1/"+formatNumber(player.stats.bestDenominator),"☄"],["OBJETS VENDUS",formatNumber(player.stats.itemsSold),"◒"],["COINS GAGNÉS",formatNumber(player.stats.coinsEarned),"◈"],["COINS DÉPENSÉS",formatNumber(player.stats.coinsSpent),"↗"],["OBJETS ÉQUIPÉS",formatNumber(player.stats.itemsEquipped),"◎"],["SECRETS",formatNumber(player.stats.secretsFound),"⬢"],["COLLECTION",unique+"/"+ITEMS.length,"✦"]].map(([l,v,i])=><div className="stat-card" key={l}><span className="stat-icon">{i}</span><div><div className="stat-label">{l}</div><div className="stat-value">{v}</div></div></div>)}</div><div className="grid gap-4 lg:grid-cols-2"><Panel title="RÉPARTITION ESTIMÉE" icon="◈"><div className="space-y-3">{bars.map(([name,val])=><div key={name}><div className="flex justify-between text-xs text-white/45"><span>{name}</span><span>{val}%</span></div><div className="chart-track"><div className="chart-bar" style={{width:Math.min(100,Number(val))+"%"}}/></div></div>)}</div></Panel><Panel title="PITY TRACKER" icon="◌"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={250}/><PityBar label="DIVINE" current={player.pity.divine} max={499}/></Panel></div></div>}
 
 function SettingsView({player,setPlayer,onLogout}:{player:PlayerState;setPlayer:Dispatch<SetStateAction<PlayerState>>;onLogout:()=>void}){const toggle=(key:"music"|"sfx"|"animations"|"shake"|"particles"|"reducedMotion")=>setPlayer(p=>({...p,settings:{...p.settings,[key]:!p.settings[key]}}));return <div className="page-shell"><PageHeading title="SETTINGS" subtitle="Ton espace, ton rythme, ton niveau d'effets." icon="⚙"/><div className="settings-grid">{[["music","Musique","Fond sonore"],["sfx","Effets","Sons des interactions"],["animations","Animations","Transitions et feedback"],["shake","Screen Shake","Impact des drops"],["particles","Particules","Décor flottant"],["reducedMotion","Mode réduit","Limite les animations"]].map(([key,label,desc])=><button className="setting-card" key={key} onClick={()=>toggle(key as any)}><div><div className="font-display text-sm">{label}</div><div className="mt-1 text-xs text-white/35">{desc}</div></div><span className={"switch "+(player.settings[key as keyof PlayerState["settings"]]?"switch-on":"")}><span/></span></button>)}</div><div className="panel"><div className="panel-title">VOLUME</div><input type="range" min="0" max="100" value={player.settings.volume} onChange={e=>setPlayer(p=>({...p,settings:{...p.settings,volume:Number(e.target.value)}}))} className="w-full accent-indigo-400"/><div className="mt-2 text-xs text-white/35">{player.settings.volume}%</div></div><div className="danger-zone"><b>COMPTE & SESSION</b><span>Déconnecte-toi pour créer un autre compte ou revenir au choix du mode local.</span><button className="danger-btn" onClick={onLogout}>SE DÉCONNECTER</button></div><div className="danger-zone"><b>LOCAL SAVE</b><span>La progression est conservée dans le navigateur.</span><button className="danger-btn" onClick={()=>{localStorage.removeItem("anime-rng-player-v1");location.reload()}}>RESET SAVE</button></div></div>}
 
