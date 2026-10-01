@@ -2,7 +2,7 @@ import {createClient} from "@supabase/supabase-js";
 import {ITEMS} from "../src/data";
 import {defaultPlayer} from "../src/store";
 
-const MAX_PITY={epic:100,legendary:250,mythic:501} as const;
+const MAX_PITY={legendary:100,mythic:250,divine:499} as const;
 const ADMIN_PASSWORD=String(process.env.MDP||"").trim().toLowerCase();
 
 function cloneDefault(username:string){
@@ -89,7 +89,7 @@ export default async function handler(req:any,res:any){
      save.inventoryCapacity=Math.max(Number(save.inventoryCapacity)||50,save.inventory.length);
    }
 
-   for(const key of ["epic","legendary","mythic"] as const){
+   for(const key of ["legendary","mythic","divine"] as const){
      const value=Number(body["pity_"+key]);
      if(Number.isFinite(value)&&value>=0) save.pity[key]=Math.min(MAX_PITY[key],Math.floor(value));
    }
