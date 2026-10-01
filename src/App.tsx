@@ -543,7 +543,7 @@ function RollView({player,lastRoll,luck,rolling,autoRoll,setAutoRoll,banner,setB
    </section>
    <aside className="roll-side-stack">
     <Panel title="BOOSTS ACTIFS" icon="⚡"><BoostList player={player}/></Panel>
-    <Panel title="PITY" icon="◌"><div className="space-y-3"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={500}/></div></Panel>
+    <Panel title="PITY" icon="◌"><div className="space-y-3"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={501}/></div></Panel>
     <Panel title="DROP ÉQUIPÉ" icon="◈"><RngFeature item={equipped}/></Panel>
    </aside>
   </div>
