@@ -3,7 +3,7 @@ import {ITEMS} from "../src/data";
 import {defaultPlayer} from "../src/store";
 
 const MAX_PITY={epic:100,legendary:250,mythic:500} as const;
-const ADMIN_USERNAME="rubansu1";
+const ADMIN_USERNAME="rubansu";
 
 function cloneDefault(username:string){
  return JSON.parse(JSON.stringify({...defaultPlayer,username,equippedItems:[],equipped:undefined}));
