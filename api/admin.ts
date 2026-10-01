@@ -9,7 +9,7 @@ function cloneDefault(username:string){
  return JSON.parse(JSON.stringify({...defaultPlayer,username,equippedItems:[],equipped:undefined}));
 }
 
-async function getAdminUser(req:any){
+async function getAdminUser(req:any,password:string){
  const url=process.env.URL;
  const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!serviceKey) throw new Error("Admin non configuré : URL et SUPABASE_SERVICE_ROLE_KEY sont requis.");
@@ -18,8 +18,7 @@ async function getAdminUser(req:any){
  const client=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data,error}=await client.auth.getUser(token);
  if(error||!data.user) throw new Error("Session invalide.");
- const username=String(data.user.user_metadata?.username||data.user.email?.split("@")[0]||"").trim().toLowerCase();
- if(username!==ADMIN_USERNAME) throw new Error("Accès admin refusé.");
+ if(String(password||"").trim().toLowerCase()!==ADMIN_PASSWORD) throw new Error("Mot de passe admin incorrect.");
  return {client,user:data.user};
 }
 
@@ -56,8 +55,8 @@ function mergeSave(raw:any,username:string){
 export default async function handler(req:any,res:any){
  if(req.method!=="POST") return res.status(405).json({error:"Méthode non autorisée."});
  try{
-   const {client}=await getAdminUser(req);
    const body=typeof req.body==="string"?JSON.parse(req.body):req.body||{};
+   const {client}=await getAdminUser(req,String(body.adminPassword||""));
    if(body.action==="check") return res.status(200).json({isAdmin:true});
 
    if(body.action!=="grant") return res.status(400).json({error:"Action inconnue."});
