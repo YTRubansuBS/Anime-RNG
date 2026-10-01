@@ -168,22 +168,25 @@ function App(){
  },[autoRoll,resultOpen,player.rollSpeed]);
  const equip=(itemId:string)=>{
    if(!player.inventory.some(e=>e.itemId===itemId)){notify("Objet non obtenu.");return;}
+   const wasEquipped=Boolean(player.equippedItems?.includes(itemId)||player.equipped===itemId);
    setPlayer(p=>{
-     const current=p.equippedItems?.length?p.equippedItems:(p.equipped?[p.equipped]:[]);
-     if(current.includes(itemId)){
-       const next=current.filter(id=>id!==itemId);
+     const current=[...(p.equippedItems||[])].filter(Boolean);
+     const legacy=p.equipped&&!current.includes(p.equipped)?[...current,p.equipped]:current;
+     if(wasEquipped||legacy.includes(itemId)){
+       const next=legacy.filter(id=>id!==itemId);
        return {...p,equippedItems:next,equipped:next[0]};
      }
-     if(current.length>=p.equippedSlots){notify("Emplacements pleins. Améliore tes emplacements d'aura.");return p;}
-     const next=[...current,itemId];
+     if(legacy.length>=p.equippedSlots){notify("Emplacements pleins. Améliore tes emplacements d'aura.");return p;}
+     const next=[...legacy,itemId];
      return {...p,equippedItems:next,equipped:next[0],stats:{...p.stats,itemsEquipped:p.stats.itemsEquipped+1}};
    });
-   if(player.equippedItems?.includes(itemId)||player.equipped===itemId) {
-     setLastRoll(player.equippedItems?.find(id=>id!==itemId) ? ITEMS.find(x=>x.id===player.equippedItems?.find(id=>id!==itemId)) : undefined);
-   } else {
+   if(wasEquipped){
+     const remaining=(player.equippedItems||[]).filter(id=>id!==itemId);
+     setLastRoll(remaining[0]?ITEMS.find(x=>x.id===remaining[0]):undefined);
+   }else{
      setLastRoll(ITEMS.find(x=>x.id===itemId));
    }
- }; 
+ };
  const buyEquipSlot=()=>{
    if(player.equippedSlots>=5){notify("5 emplacements maximum.");return;}
    const costs=[0,10000,50000,250000,1000000];
