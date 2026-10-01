@@ -13,10 +13,10 @@ const RARITY_LUCK:Record<Rarity,number>={
  COMMON:0,UNCOMMON:2,RARE:5,EPIC:9,LEGENDARY:14,MYTHIC:20,DIVINE:27,CELESTIAL:35,TRANSCENDENT:45,SECRET:60
 };
 
-export const PITY_THRESHOLDS:Record<"EPIC"|"LEGENDARY"|"MYTHIC",number>={
- EPIC:100,
- LEGENDARY:250,
- MYTHIC:501
+export const PITY_THRESHOLDS:Record<"LEGENDARY"|"MYTHIC"|"DIVINE",number>={
+ LEGENDARY:100,
+ MYTHIC:250,
+ DIVINE:499
 };
 export const itemLuckBonus=(item:RngItem|undefined)=>item?RARITY_LUCK[item.rarity]:0;
 export const equippedLuckBonus=(player:PlayerState)=>{
@@ -32,22 +32,18 @@ export function rollRng(player:PlayerState,banner:RngItem["banner"]){
 
  // Pity is a real guarantee, not just a hidden luck boost.
  // Higher-rarity pity takes priority and can still trigger from any banner.
- const pityTarget=player.pity.mythic>=PITY_THRESHOLDS.MYTHIC-1?"MYTHIC"
+ const pityTarget=player.pity.divine>=PITY_THRESHOLDS.DIVINE-1?"DIVINE"
+   :player.pity.mythic>=PITY_THRESHOLDS.MYTHIC-1?"MYTHIC"
    :player.pity.legendary>=PITY_THRESHOLDS.LEGENDARY-1?"LEGENDARY"
-   :player.pity.epic>=PITY_THRESHOLDS.EPIC-1?"EPIC"
    :undefined;
  if(pityTarget){
    const guaranteed=ITEMS.filter(item=>item.rarity===pityTarget);
    if(guaranteed.length) return guaranteed[randomInt(guaranteed.length)];
  }
 
- const allowedRarities:Rarity[]=
-   banner==="NORMAL"?["COMMON","UNCOMMON","RARE","EPIC"]:
-   banner==="ANCIENT"?["LEGENDARY","MYTHIC"]:
-   banner==="DIVINE"?["MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT"]:
-   ["SECRET"];
+ const allowedRarities:Rarity[]=["COMMON","UNCOMMON","RARE","EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"];
  const baseWeights:Record<Rarity,number>={
-   COMMON:55,UNCOMMON:25,RARE:12,EPIC:8,LEGENDARY:65,MYTHIC:35,DIVINE:70,CELESTIAL:18,TRANSCENDENT:10,SECRET:1
+   COMMON:48,UNCOMMON:24,RARE:13,EPIC:7,LEGENDARY:4,MYTHIC:2.5,DIVINE:1,CELESTIAL:0.35,TRANSCENDENT:0.12,SECRET:0.03
  };
  const luckFactor=Math.max(1,1+luck/100);
  const weighted=allowedRarities.map((rarity,index)=>({
