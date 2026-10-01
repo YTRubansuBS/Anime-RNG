@@ -3,6 +3,7 @@ import {ITEMS} from "../src/data";
 import {defaultPlayer} from "../src/store";
 
 const MAX_PITY={epic:100,legendary:250,mythic:500} as const;
+const ADMIN_USERNAME="rubansu1";
 
 function cloneDefault(username:string){
  return JSON.parse(JSON.stringify({...defaultPlayer,username,equippedItems:[],equipped:undefined}));
@@ -11,14 +12,14 @@ function cloneDefault(username:string){
 async function getAdminUser(req:any){
  const url=process.env.URL;
  const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
- const adminId=process.env.ADMIN_USER_ID;
- if(!url||!serviceKey||!adminId) throw new Error("Admin non configuré : URL, SUPABASE_SERVICE_ROLE_KEY et ADMIN_USER_ID sont requis.");
+ if(!url||!serviceKey) throw new Error("Admin non configuré : URL et SUPABASE_SERVICE_ROLE_KEY sont requis.");
  const token=String(req.headers?.authorization||"").replace(/^Bearer\s+/i,"").trim();
  if(!token) throw new Error("Session requise.");
  const client=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data,error}=await client.auth.getUser(token);
  if(error||!data.user) throw new Error("Session invalide.");
- if(data.user.id!==adminId) throw new Error("Accès admin refusé.");
+ const username=String(data.user.user_metadata?.username||data.user.email?.split("@")[0]||"").trim().toLowerCase();
+ if(username!==ADMIN_USERNAME) throw new Error("Accès admin refusé.");
  return {client,user:data.user};
 }
 
