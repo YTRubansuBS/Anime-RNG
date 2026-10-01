@@ -51,7 +51,7 @@ const denominators:Record<Rarity,number[]>={
 
 const order:Rarity[]=["COMMON","UNCOMMON","RARE","EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"];
 const icons=["◉","✦","◈","◌","⬢","✧","✺","✹","☄","◆"];
-const bannerFor=(r:Rarity):RngItem["banner"]=>r==="SECRET"?"SECRET":["TRANSCENDENT","CELESTIAL","DIVINE"].includes(r)?"DIVINE":["MYTHIC","LEGENDARY"].includes(r)?"ANCIENT":"NORMAL";
+const bannerFor=(_r:Rarity):RngItem["banner"]=>"NORMAL";
 const power:Record<Rarity,number>={COMMON:10,UNCOMMON:28,RARE:65,EPIC:130,LEGENDARY:260,MYTHIC:520,DIVINE:1000,CELESTIAL:2400,TRANSCENDENT:6000,SECRET:15000};
 const value:Record<Rarity,number>={COMMON:6,UNCOMMON:18,RARE:55,EPIC:140,LEGENDARY:320,MYTHIC:800,DIVINE:1800,CELESTIAL:5000,TRANSCENDENT:15000,SECRET:50000};
 
