@@ -32,9 +32,9 @@ export function rollRng(player:PlayerState,banner:RngItem["banner"]){
 
  // Pity is a real guarantee, not just a hidden luck boost.
  // Higher-rarity pity takes priority and can still trigger from any banner.
- const pityTarget=player.pity.mythic>=PITY_THRESHOLDS.MYTHIC?"MYTHIC"
-   :player.pity.legendary>=PITY_THRESHOLDS.LEGENDARY?"LEGENDARY"
-   :player.pity.epic>=PITY_THRESHOLDS.EPIC?"EPIC"
+ const pityTarget=player.pity.mythic>=PITY_THRESHOLDS.MYTHIC-1?"MYTHIC"
+   :player.pity.legendary>=PITY_THRESHOLDS.LEGENDARY-1?"LEGENDARY"
+   :player.pity.epic>=PITY_THRESHOLDS.EPIC-1?"EPIC"
    :undefined;
  if(pityTarget){
    const guaranteed=ITEMS.filter(item=>item.rarity===pityTarget);
