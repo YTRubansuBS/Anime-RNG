@@ -60,10 +60,7 @@ Build CI: TypeScript + Vite vérifiés à chaque push.
 
 ## Admin Panel
 
-Le panneau **Admin Panel** est accessible dans **⚙️ Settings → Admin Panel** uniquement pour le compte dont le pseudo est **Rubansu**.
-
-Le contrôle d'accès est fait côté serveur après validation de la session Supabase. Le pseudo est comparé sans tenir compte des majuscules/minuscules.
-
+Le panneau **Admin Panel** est visible dans **☰ MENU → Admin Panel**. Pour l'ouvrir et utiliser les outils, il faut entrer le mot de passe **Doliprane** (majuscule/minuscule ignorée). Le contrôle du mot de passe est fait côté serveur après validation de la session Supabase.
 Variables Vercel nécessaires :
 - `URL` : URL Supabase déjà utilisée par le jeu.
 - `KEY` : clé client Supabase déjà utilisée par le jeu.
