@@ -16,7 +16,7 @@ const RARITY_LUCK:Record<Rarity,number>={
 export const PITY_THRESHOLDS:Record<"EPIC"|"LEGENDARY"|"MYTHIC",number>={
  EPIC:100,
  LEGENDARY:250,
- MYTHIC:500
+ MYTHIC:501
 };
 export const itemLuckBonus=(item:RngItem|undefined)=>item?RARITY_LUCK[item.rarity]:0;
 export const equippedLuckBonus=(player:PlayerState)=>{
@@ -41,16 +41,32 @@ export function rollRng(player:PlayerState,banner:RngItem["banner"]){
    if(guaranteed.length) return guaranteed[randomInt(guaranteed.length)];
  }
 
- const candidates=pool.length?pool:ITEMS;
- for(const item of candidates){
-  const pityBoost=item.rarity==="EPIC"&&player.pity.epic>=95?20
-    :item.rarity==="LEGENDARY"&&player.pity.legendary>=240?25
-    :item.rarity==="MYTHIC"&&player.pity.mythic>=490?30
-    :0;
-  if(passes(item,luck+pityBoost)) return item;
+ const allowedRarities:Rarity[]=
+   banner==="NORMAL"?["COMMON","UNCOMMON","RARE","EPIC"]:
+   banner==="ANCIENT"?["LEGENDARY","MYTHIC"]:
+   banner==="DIVINE"?["MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT"]:
+   ["SECRET"];
+ const baseWeights:Record<Rarity,number>={
+   COMMON:55,UNCOMMON:25,RARE:12,EPIC:8,LEGENDARY:65,MYTHIC:35,DIVINE:70,CELESTIAL:18,TRANSCENDENT:10,SECRET:1
+ };
+ const luckFactor=Math.max(1,1+luck/100);
+ const weighted=allowedRarities.map((rarity,index)=>({
+   rarity,
+   weight:baseWeights[rarity]*Math.pow(luckFactor,index)
+ }));
+ const total=weighted.reduce((sum,x)=>sum+x.weight,0);
+ let pick=Math.random()*total;
+ let selectedRarity=weighted[weighted.length-1].rarity;
+ for(const entry of weighted){
+   pick-=entry.weight;
+   if(pick<=0){selectedRarity=entry.rarity;break;}
  }
- const commons=ITEMS.filter(i=>i.rarity==="COMMON");
- return commons[randomInt(commons.length)];
+ const rarityItems=pool.filter(item=>item.rarity===selectedRarity);
+ if(rarityItems.length){
+   const item=rarityItems[randomInt(rarityItems.length)];
+   return item;
+ }
+ return pool[0]||ITEMS[0];
 }
 
 export const isRarer=(a:RngItem|undefined,b:RngItem|undefined)=>{
