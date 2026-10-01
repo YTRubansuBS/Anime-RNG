@@ -154,20 +154,18 @@ function App(){
  };
 
  useEffect(()=>{
-   if(!autoRoll)return;
+   if(!autoRoll||rolling||resultOpen)return;
    const wait=Math.max(220,Math.round(720/player.rollSpeed));
-   const id=window.setTimeout(()=>{
-     if(resultOpen){
-       // Auto Roll reproduit exactement l'action « CONTINUER » avant de relancer.
-       setResultOpen(false);
-       window.setTimeout(()=>doRoll(),140);
-     }else if(!rolling){
-       doRoll();
-     }
-   },resultOpen?Math.max(260,Math.min(700,wait)):wait);
+   const id=window.setTimeout(()=>doRoll(),wait);
    return()=>window.clearTimeout(id);
- },[autoRoll,resultOpen,rolling,player.rollSpeed,player.stats.totalRolls,banner]);
+ },[autoRoll,rolling,resultOpen,player.rollSpeed,banner]);
 
+ useEffect(()=>{
+   if(!autoRoll||!resultOpen)return;
+   const wait=Math.max(260,Math.min(700,Math.round(420/player.rollSpeed)));
+   const id=window.setTimeout(()=>setResultOpen(false),wait);
+   return()=>window.clearTimeout(id);
+ },[autoRoll,resultOpen,player.rollSpeed]);
  const equip=(itemId:string)=>{
    if(!player.inventory.some(e=>e.itemId===itemId)){notify("Objet non obtenu.");return;}
    setPlayer(p=>{
