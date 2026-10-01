@@ -38,7 +38,6 @@ Le workflow .github/workflows/build.yml est prévu pour vérifier le build sur G
 - src/App.tsx : pages et composants du jeu.
 - src/styles.css : direction artistique anime/neon et responsive.
 
-
 Build CI: TypeScript + Vite vérifiés à chaque push.
 
 ## Connexion et sauvegarde
@@ -59,10 +58,9 @@ Build CI: TypeScript + Vite vérifiés à chaque push.
 - Toutes les animations ultra-rares utilisent la même durée : **2350 ms**.
 - Les résultats devenus trop fréquents pour le niveau du joueur sont donc révélés plus rapidement sans modifier le résultat RNG.
 
-
 ## Admin Panel
 
-Le panneau **Admin Panel** est accessible dans **☰ MENU → Admin Panel** uniquement pour le compte dont le pseudo est **Rubansu1**.
+Le panneau **Admin Panel** est accessible dans **⚙️ Settings → Admin Panel** uniquement pour le compte dont le pseudo est **Rubansu**.
 
 Le contrôle d'accès est fait côté serveur après validation de la session Supabase. Le pseudo est comparé sans tenir compte des majuscules/minuscules.
 
