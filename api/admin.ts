@@ -85,7 +85,7 @@ export default async function handler(req:any,res:any){
      for(let i=0;i<auraQuantity;i++){
        save.inventory.push({id:"admin-"+Date.now()+"-"+Math.random().toString(36).slice(2),itemId:aura.id,locked:false,favorite:false,obtainedAt:Date.now()});
      }
-     save.inventory=save.inventory.slice(-Math.max(save.inventoryCapacity||50,50));
+     save.inventoryCapacity=Math.max(Number(save.inventoryCapacity)||50,save.inventory.length);
    }
 
    for(const key of ["epic","legendary","mythic"] as const){
