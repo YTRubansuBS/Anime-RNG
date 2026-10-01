@@ -18,6 +18,7 @@ async function getAdminUser(req:any,password:string){
  const client=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
  const {data,error}=await client.auth.getUser(token);
  if(error||!data.user) throw new Error("Session invalide.");
+ if(!ADMIN_PASSWORD) throw new Error("Variable MDP manquante sur le serveur.");
  if(String(password||"").trim().toLowerCase()!==ADMIN_PASSWORD) throw new Error("Mot de passe admin incorrect.");
  return {client,user:data.user};
 }
