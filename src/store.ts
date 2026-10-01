@@ -28,14 +28,38 @@ export const defaultPlayer:PlayerState={
  settings:{music:false,sfx:true,animations:true,shake:true,particles:true,reducedMotion:false,volume:70}
 };
 
-export const readPlayer=():PlayerState=>{
- try{
-  const raw=localStorage.getItem(STORAGE);if(!raw)return defaultPlayer;
-  const p=JSON.parse(raw) as Partial<PlayerState>;
-  return {...defaultPlayer,...p,equippedItems:p.equippedItems?.length?p.equippedItems:(p.equipped?[p.equipped]:defaultPlayer.equippedItems),equippedSlots:Math.min(5,Math.max(1,p.equippedSlots||1)),stats:{...defaultPlayer.stats,...(p.stats||{})},pity:{...defaultPlayer.pity,...(p.pity||{})},settings:{...defaultPlayer.settings,...(p.settings||{})},quests:p.quests||seedQuests(),achievements:p.achievements||ACHIEVEMENTS.map(a=>({...a})),inventory:p.inventory||defaultPlayer.inventory,skills:p.skills||{},upgrades:p.upgrades||{}};
- }catch{return defaultPlayer;}
+export const normalizePlayer=(saved:Partial<PlayerState>):PlayerState=>{
+ const p={...defaultPlayer,...saved};
+ const equippedItems=Array.isArray(saved.equippedItems)
+   ? saved.equippedItems.filter(Boolean)
+   : (saved.equipped?[saved.equipped]:defaultPlayer.equippedItems||[]);
+ return {
+  ...p,
+  equippedItems,
+  equipped:equippedItems[0],
+  equippedSlots:Math.min(5,Math.max(1,Number(saved.equippedSlots||defaultPlayer.equippedSlots))),
+  stats:{...defaultPlayer.stats,...(saved.stats||{})},
+  pity:{
+   epic:Math.min(100,Math.max(0,Number(saved.pity?.epic??defaultPlayer.pity.epic))),
+   legendary:Math.min(250,Math.max(0,Number(saved.pity?.legendary??defaultPlayer.pity.legendary))),
+   mythic:Math.min(500,Math.max(0,Number(saved.pity?.mythic??defaultPlayer.pity.mythic)))
+  },
+  settings:{...defaultPlayer.settings,...(saved.settings||{})},
+  quests:saved.quests||seedQuests(),
+  achievements:saved.achievements||ACHIEVEMENTS.map(a=>({...a})),
+  inventory:saved.inventory||defaultPlayer.inventory,
+  skills:saved.skills||{},
+  upgrades:saved.upgrades||{}
+ };
 };
 
+export const readPlayer=():PlayerState=>{
+ try{
+  const raw=localStorage.getItem(STORAGE);
+  if(!raw)return defaultPlayer;
+  return normalizePlayer(JSON.parse(raw) as Partial<PlayerState>);
+ }catch{return defaultPlayer;}
+};
 export const usePlayer=()=>{
  const [player,setPlayer]=useState<PlayerState>(()=>readPlayer());
  useEffect(()=>localStorage.setItem(STORAGE,JSON.stringify(player)),[player]);
