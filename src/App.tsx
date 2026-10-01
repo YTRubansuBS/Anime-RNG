@@ -56,29 +56,6 @@ function App(){
    return()=>{mounted=false;subscription.unsubscribe();};
  },[setPlayer]);
 
- useEffect(()=>{
-   if(accessMode!=="account"||!authUser||!supabase){
-     setIsAdmin(false);
-     return;
-   }
-   let active=true;
-   supabase.auth.getSession().then(async ({data})=>{
-     const token=data.session?.access_token;
-     if(!token)return;
-     try{
-       const response=await fetch("/api/admin",{
-         method:"POST",
-         headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
-         body:JSON.stringify({action:"check"})
-       });
-       const json=await response.json().catch(()=>({}));
-       if(active)setIsAdmin(response.ok&&json.isAdmin===true);
-     }catch{
-       if(active)setIsAdmin(false);
-     }
-   });
-   return()=>{active=false;};
- },[accessMode,authUser,authReady]);
 
  useEffect(()=>{
    if(accessMode!=="account"||!authUser||!authReady||!supabase)return;
@@ -101,7 +78,6 @@ function App(){
  const [menuOpen,setMenuOpen]=useState(false);
  const [eventOpen,setEventOpen]=useState(false);
  const [adminOpen,setAdminOpen]=useState(false);
- const [isAdmin,setIsAdmin]=useState(false);
  const [autoRoll,setAutoRoll]=useState(false);
  const [banner,setBanner]=useState<RngItem["banner"]>("NORMAL");
  const [query,setQuery]=useState("");
@@ -336,7 +312,7 @@ function App(){
       {view==="leaderboard"&&<LeaderboardView best={best}/>}
       {view==="achievements"&&<AchievementsView player={player}/>}
       {view==="stats"&&<StatsView player={player} unique={unique}/>}
-      {view==="settings"&&<SettingsView player={player} setPlayer={setPlayer} isAdmin={isAdmin} openAdmin={()=>setAdminOpen(true)} onLogout={async()=>{if(supabase) await supabase.auth.signOut();localStorage.removeItem("anime-rng-player-v1");setPlayer(defaultPlayer);setAccessMode("choice");setAuthUser(null);setView("roll");}}/>}
+      {view==="settings"&&<SettingsView player={player} setPlayer={setPlayer} onLogout={async()=>{if(supabase) await supabase.auth.signOut();localStorage.removeItem("anime-rng-player-v1");setPlayer(defaultPlayer);setAccessMode("choice");setAuthUser(null);setView("roll");}}/>}
     </main>
    </div>
    <MobileNav view={view} setView={setView} openMenu={()=>setMenuOpen(true)}/>
@@ -346,7 +322,7 @@ function App(){
    {sellConfirm&&<Modal title="VENTE MULTIPLE" close={()=>setSellConfirm(false)}><p className="text-sm text-white/55">Vendre {selected.length} objet(s) sélectionné(s) ? Favoris et verrouillés sont ignorés.</p><div className="mt-5 flex justify-end gap-3"><button className="ghost-btn" onClick={()=>setSellConfirm(false)}>ANNULER</button><button className="danger-btn" onClick={sellSelected}>VENDRE</button></div></Modal>}
    {zoneOpen&&<Modal title="ZONES • CHOISIS TA DESTINATION" close={()=>setZoneOpen(false)}><div className="grid gap-3 md:grid-cols-2">{ZONES.map(z=>{const unlocked=player.zones.includes(z.name);const cost=2500*(z.index+1);return <button className={"zone-card "+(unlocked?"zone-card-active":"")} key={z.id} onClick={()=>{unlockZone(z.name,z.index);setZoneOpen(false)}}><div className="flex items-center justify-between gap-3"><div className="text-left"><div className="font-display text-sm">{z.name}</div><div className="mt-1 text-xs text-white/40">{z.description}</div></div><span className="badge whitespace-nowrap">{unlocked?"DÉBLOQUÉE":formatNumber(cost)+" ◈"}</span></div><div className="mt-4 flex justify-between text-xs text-white/35"><span>{z.bonus}</span><span>Zone {z.index+1}/7</span></div></button>})}</div></Modal>}
    {menuOpen&&<MenuPanel player={player} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}} openAdmin={()=>{setMenuOpen(false);setAdminOpen(true)}}/>}
-   {adminOpen&&isAdmin&&<AdminPanel player={player} authUser={authUser} setPlayer={setPlayer} close={()=>setAdminOpen(false)}/>}
+   {adminOpen&&<AdminPanel player={player} authUser={authUser} setPlayer={setPlayer} close={()=>setAdminOpen(false)}/>}
    {eventOpen&&<Modal title="EVENTS • LUCKY FESTIVAL" close={()=>setEventOpen(false)}><div className="event-spotlight"><div className="event-kicker">TEMPS LIMITÉ • ACTIF MAINTENANT</div><div className="event-spotlight-title">{EVENTS[0].title}</div><p>{EVENTS[0].description}</p><div className="event-spotlight-grid"><div><span>BONUS</span><b>{EVENTS[0].bonus}</b></div><div><span>DURÉE</span><b>{EVENTS[0].duration}</b></div></div></div></Modal>}
    {tutorial&&<Modal title={["BIENVENUE","PREMIER ROLL","COLLECTION","ÉQUIPE TON DROP","PROGRESSE","CONTINUE"][tutorialStep]} close={finishTutorial}><div className="space-y-5"><div className="tutorial-orb"><span>{tutorialStep+1}</span></div><p className="text-sm leading-7 text-white/65">{[
      "Ta chasse commence maintenant. Chaque roll peut révéler une aura originale.",
@@ -629,7 +605,7 @@ function AchievementsView({player}:{player:PlayerState}){return <div className="
 
 function StatsView({player,unique}:{player:PlayerState;unique:number}){const bars=[["COMMON",72],["UNCOMMON",15],["RARE",8],["EPIC",3],["LEGENDARY",1.3],["MYTHIC",.4],["DIVINE",.1],["CELESTIAL",.04],["TRANSCENDENT",.01],["SECRET",.001]];return <div className="page-shell"><PageHeading title="STATISTIQUES AVANCÉES" subtitle="Lecture détaillée de ta boucle RNG." icon="▥"/><div className="stats-grid">{[["TOTAL ROLLS",formatNumber(player.stats.totalRolls),"◉"],["ROLLS AUJOURD'HUI",formatNumber(player.stats.rollsToday),"↯"],["MEILLEUR 1/X","1/"+formatNumber(player.stats.bestDenominator),"☄"],["OBJETS VENDUS",formatNumber(player.stats.itemsSold),"◒"],["COINS GAGNÉS",formatNumber(player.stats.coinsEarned),"◈"],["COINS DÉPENSÉS",formatNumber(player.stats.coinsSpent),"↗"],["OBJETS ÉQUIPÉS",formatNumber(player.stats.itemsEquipped),"◎"],["SECRETS",formatNumber(player.stats.secretsFound),"⬢"],["COLLECTION",unique+"/"+ITEMS.length,"✦"]].map(([l,v,i])=><div className="stat-card" key={l}><span className="stat-icon">{i}</span><div><div className="stat-label">{l}</div><div className="stat-value">{v}</div></div></div>)}</div><div className="grid gap-4 lg:grid-cols-2"><Panel title="RÉPARTITION ESTIMÉE" icon="◈"><div className="space-y-3">{bars.map(([name,val])=><div key={name}><div className="flex justify-between text-xs text-white/45"><span>{name}</span><span>{val}%</span></div><div className="chart-track"><div className="chart-bar" style={{width:Math.min(100,Number(val))+"%"}}/></div></div>)}</div></Panel><Panel title="PITY TRACKER" icon="◌"><PityBar label="EPIC" current={player.pity.epic} max={100}/><PityBar label="LEGENDARY" current={player.pity.legendary} max={250}/><PityBar label="MYTHIC" current={player.pity.mythic} max={500}/></Panel></div></div>}
 
-function SettingsView({player,setPlayer,isAdmin,openAdmin,onLogout}:{player:PlayerState;setPlayer:Dispatch<SetStateAction<PlayerState>>;isAdmin:boolean;openAdmin:()=>void;onLogout:()=>void}){const toggle=(key:"music"|"sfx"|"animations"|"shake"|"particles"|"reducedMotion")=>setPlayer(p=>({...p,settings:{...p.settings,[key]:!p.settings[key]}}));return <div className="page-shell"><PageHeading title="SETTINGS" subtitle="Ton espace, ton rythme, ton niveau d'effets." icon="⚙"/><div className="settings-grid">{[["music","Musique","Fond sonore"],["sfx","Effets","Sons des interactions"],["animations","Animations","Transitions et feedback"],["shake","Screen Shake","Impact des drops"],["particles","Particules","Décor flottant"],["reducedMotion","Mode réduit","Limite les animations"]].map(([key,label,desc])=><button className="setting-card" key={key} onClick={()=>toggle(key as any)}><div><div className="font-display text-sm">{label}</div><div className="mt-1 text-xs text-white/35">{desc}</div></div><span className={"switch "+(player.settings[key as keyof PlayerState["settings"]]?"switch-on":"")}><span/></span></button>)}</div><div className="panel"><div className="panel-title">VOLUME</div><input type="range" min="0" max="100" value={player.settings.volume} onChange={e=>setPlayer(p=>({...p,settings:{...p.settings,volume:Number(e.target.value)}}))} className="w-full accent-indigo-400"/><div className="mt-2 text-xs text-white/35">{player.settings.volume}%</div></div>{isAdmin&&<div className="panel"><div className="panel-title"><span>🛠️</span>ADMINISTRATION</div><p className="text-sm text-white/45">Outils administrateur accessibles uniquement avec le compte Rubansu1.</p><button className="primary-btn mt-4 w-full py-3" onClick={openAdmin}>OUVRIR ADMIN PANEL</button></div>}<div className="danger-zone"><b>COMPTE & SESSION</b><span>Déconnecte-toi pour créer un autre compte ou revenir au choix du mode local.</span><button className="danger-btn" onClick={onLogout}>SE DÉCONNECTER</button></div><div className="danger-zone"><b>LOCAL SAVE</b><span>La progression est conservée dans le navigateur.</span><button className="danger-btn" onClick={()=>{localStorage.removeItem("anime-rng-player-v1");location.reload()}}>RESET SAVE</button></div></div>}
+function SettingsView({player,setPlayer,onLogout}:{player:PlayerState;setPlayer:Dispatch<SetStateAction<PlayerState>>;onLogout:()=>void}){const toggle=(key:"music"|"sfx"|"animations"|"shake"|"particles"|"reducedMotion")=>setPlayer(p=>({...p,settings:{...p.settings,[key]:!p.settings[key]}}));return <div className="page-shell"><PageHeading title="SETTINGS" subtitle="Ton espace, ton rythme, ton niveau d'effets." icon="⚙"/><div className="settings-grid">{[["music","Musique","Fond sonore"],["sfx","Effets","Sons des interactions"],["animations","Animations","Transitions et feedback"],["shake","Screen Shake","Impact des drops"],["particles","Particules","Décor flottant"],["reducedMotion","Mode réduit","Limite les animations"]].map(([key,label,desc])=><button className="setting-card" key={key} onClick={()=>toggle(key as any)}><div><div className="font-display text-sm">{label}</div><div className="mt-1 text-xs text-white/35">{desc}</div></div><span className={"switch "+(player.settings[key as keyof PlayerState["settings"]]?"switch-on":"")}><span/></span></button>)}</div><div className="panel"><div className="panel-title">VOLUME</div><input type="range" min="0" max="100" value={player.settings.volume} onChange={e=>setPlayer(p=>({...p,settings:{...p.settings,volume:Number(e.target.value)}}))} className="w-full accent-indigo-400"/><div className="mt-2 text-xs text-white/35">{player.settings.volume}%</div></div><div className="danger-zone"><b>COMPTE & SESSION</b><span>Déconnecte-toi pour créer un autre compte ou revenir au choix du mode local.</span><button className="danger-btn" onClick={onLogout}>SE DÉCONNECTER</button></div><div className="danger-zone"><b>LOCAL SAVE</b><span>La progression est conservée dans le navigateur.</span><button className="danger-btn" onClick={()=>{localStorage.removeItem("anime-rng-player-v1");location.reload()}}>RESET SAVE</button></div></div>}
 
 function AuthGate({configured,onLocal,onBack,loading}:{configured:boolean;onLocal?:()=>void;onBack?:()=>void;loading?:boolean}){
  const [mode,setMode]=useState<"login"|"signup">("login");
