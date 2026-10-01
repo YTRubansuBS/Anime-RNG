@@ -24,7 +24,7 @@ export const defaultPlayer:PlayerState={
  achievements:ACHIEVEMENTS.map(a=>({...a})),dailyRewards:[true,false,false,false,false,false,false],dailyClaimed:1,claimedCodes:[],
  zones:["Hidden Village"],selectedZone:"Hidden Village",
  stats:{totalRolls:0,rollsToday:0,bestDenominator:58,bestItemId:ITEMS[1].id,coinsEarned:0,coinsSpent:0,itemsSold:0,itemsEquipped:1,secretsFound:0,playSeconds:60,history:[ITEMS[1].id,ITEMS[0].id]},
- pity:{epic:0,legendary:0,mythic:0},boosts:{},titles:["Beginner"],equippedTitle:"Beginner",
+ pity:{legendary:0,mythic:0,divine:0},boosts:{},titles:["Beginner"],equippedTitle:"Beginner",
  settings:{music:false,sfx:true,animations:true,shake:true,particles:true,reducedMotion:false,volume:70}
 };
 
@@ -40,9 +40,9 @@ export const normalizePlayer=(saved:Partial<PlayerState>):PlayerState=>{
   equippedSlots:Math.min(5,Math.max(1,Number(saved.equippedSlots||defaultPlayer.equippedSlots))),
   stats:{...defaultPlayer.stats,...(saved.stats||{})},
   pity:{
-   epic:Math.min(100,Math.max(0,Number(saved.pity?.epic??defaultPlayer.pity.epic))),
-   legendary:Math.min(250,Math.max(0,Number(saved.pity?.legendary??defaultPlayer.pity.legendary))),
-   mythic:Math.min(500,Math.max(0,Number(saved.pity?.mythic??defaultPlayer.pity.mythic)))
+   legendary:Math.min(100,Math.max(0,Number(saved.pity?.legendary??defaultPlayer.pity.legendary))),
+   mythic:Math.min(250,Math.max(0,Number(saved.pity?.mythic??defaultPlayer.pity.mythic))),
+   divine:Math.min(499,Math.max(0,Number(saved.pity?.divine??defaultPlayer.pity.divine)))
   },
   settings:{...defaultPlayer.settings,...(saved.settings||{})},
   quests:saved.quests||seedQuests(),
