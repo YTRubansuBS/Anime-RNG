@@ -2,7 +2,7 @@ import {createClient} from "@supabase/supabase-js";
 import {ITEMS} from "../src/data";
 import {defaultPlayer} from "../src/store";
 
-const MAX_PITY={epic:100,legendary:250,mythic:500} as const;
+const MAX_PITY={epic:100,legendary:250,mythic:501} as const;
 const ADMIN_PASSWORD=String(process.env.MDP||"").trim().toLowerCase();
 
 function cloneDefault(username:string){
