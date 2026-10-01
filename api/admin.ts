@@ -46,9 +46,9 @@ function mergeSave(raw:any,username:string){
    equipped:equippedItems[0],
    inventory:Array.isArray(saved.inventory)?saved.inventory:base.inventory,
    pity:{
-     epic:Math.min(MAX_PITY.epic,Math.max(0,Number(saved.pity?.epic??base.pity.epic))),
      legendary:Math.min(MAX_PITY.legendary,Math.max(0,Number(saved.pity?.legendary??base.pity.legendary))),
-     mythic:Math.min(MAX_PITY.mythic,Math.max(0,Number(saved.pity?.mythic??base.pity.mythic)))
+     mythic:Math.min(MAX_PITY.mythic,Math.max(0,Number(saved.pity?.mythic??base.pity.mythic))),
+     divine:Math.min(MAX_PITY.divine,Math.max(0,Number(saved.pity?.divine??base.pity.divine)))
    }
  };
 }
