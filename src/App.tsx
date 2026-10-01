@@ -345,7 +345,7 @@ function App(){
    {codeOpen&&<Modal title="CODES" close={()=>setCodeOpen(false)}><div className="space-y-5"><p className="text-sm text-white/55">Entre un code pour recevoir des coins, gems ou tickets.</p><div className="flex gap-2"><input className="field flex-1" placeholder="Entre ton code..." value={codeInput} onChange={e=>setCodeInput(e.target.value)}/><button className="primary-btn" onClick={redeem}>VALIDER</button></div><div className="grid gap-3 sm:grid-cols-3">{Object.keys(CODES).map(c=><button key={c} className="mini-card text-left" onClick={()=>setCodeInput(c)}>{c}<span className="mt-1 block text-xs text-white/35">Cliquer pour remplir</span></button>)}</div></div></Modal>}
    {sellConfirm&&<Modal title="VENTE MULTIPLE" close={()=>setSellConfirm(false)}><p className="text-sm text-white/55">Vendre {selected.length} objet(s) sélectionné(s) ? Favoris et verrouillés sont ignorés.</p><div className="mt-5 flex justify-end gap-3"><button className="ghost-btn" onClick={()=>setSellConfirm(false)}>ANNULER</button><button className="danger-btn" onClick={sellSelected}>VENDRE</button></div></Modal>}
    {zoneOpen&&<Modal title="ZONES • CHOISIS TA DESTINATION" close={()=>setZoneOpen(false)}><div className="grid gap-3 md:grid-cols-2">{ZONES.map(z=>{const unlocked=player.zones.includes(z.name);const cost=2500*(z.index+1);return <button className={"zone-card "+(unlocked?"zone-card-active":"")} key={z.id} onClick={()=>{unlockZone(z.name,z.index);setZoneOpen(false)}}><div className="flex items-center justify-between gap-3"><div className="text-left"><div className="font-display text-sm">{z.name}</div><div className="mt-1 text-xs text-white/40">{z.description}</div></div><span className="badge whitespace-nowrap">{unlocked?"DÉBLOQUÉE":formatNumber(cost)+" ◈"}</span></div><div className="mt-4 flex justify-between text-xs text-white/35"><span>{z.bonus}</span><span>Zone {z.index+1}/7</span></div></button>})}</div></Modal>}
-   {menuOpen&&<MenuPanel player={player} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}}/>}
+   {menuOpen&&<MenuPanel player={player} close={()=>setMenuOpen(false)} setView={setView} openCodes={()=>{setMenuOpen(false);setCodeOpen(true)}} openZones={()=>{setMenuOpen(false);setZoneOpen(true)}} openEvents={()=>{setMenuOpen(false);setEventOpen(true)}} openAdmin={()=>{setMenuOpen(false);setAdminOpen(true)}}/>}
    {adminOpen&&isAdmin&&<AdminPanel player={player} authUser={authUser} setPlayer={setPlayer} close={()=>setAdminOpen(false)}/>}
    {eventOpen&&<Modal title="EVENTS • LUCKY FESTIVAL" close={()=>setEventOpen(false)}><div className="event-spotlight"><div className="event-kicker">TEMPS LIMITÉ • ACTIF MAINTENANT</div><div className="event-spotlight-title">{EVENTS[0].title}</div><p>{EVENTS[0].description}</p><div className="event-spotlight-grid"><div><span>BONUS</span><b>{EVENTS[0].bonus}</b></div><div><span>DURÉE</span><b>{EVENTS[0].duration}</b></div></div></div></Modal>}
    {tutorial&&<Modal title={["BIENVENUE","PREMIER ROLL","COLLECTION","ÉQUIPE TON DROP","PROGRESSE","CONTINUE"][tutorialStep]} close={finishTutorial}><div className="space-y-5"><div className="tutorial-orb"><span>{tutorialStep+1}</span></div><p className="text-sm leading-7 text-white/65">{[
@@ -418,7 +418,7 @@ function MobileNav({view,setView,openMenu}:{view:View;setView:(v:View)=>void;ope
  </nav>
 }
 
-function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player:PlayerState;close:()=>void;setView:(v:View)=>void;openCodes:()=>void;openZones:()=>void;openEvents:()=>void}){
+function MenuPanel({player,close,setView,openCodes,openZones,openEvents,openAdmin}:{player:PlayerState;close:()=>void;setView:(v:View)=>void;openCodes:()=>void;openZones:()=>void;openEvents:()=>void;openAdmin:()=>void}){
  const items:{label:string;icon:string;view?:View;action?:()=>void;desc:string}[]=[
   {label:"Accueil",icon:"⌂",view:"home",desc:"Vue d'ensemble"},
   {label:"Skills",icon:"⚡",view:"skills",desc:"Arbre de compétences"},
@@ -432,6 +432,7 @@ function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player
   {label:"Zones",icon:"🌌",action:openZones,desc:"Changer de monde"},
   {label:"Events",icon:"🔥",action:openEvents,desc:"Événements actifs"},
   {label:"Settings",icon:"⚙️",view:"settings",desc:"Préférences"},
+  {label:"Admin Panel",icon:"🛠️",action:openAdmin,desc:"Outils administrateur"},
  ];
  const go=(item:(typeof items)[number])=>{if(item.view)setView(item.view);item.action?.();if(item.view||item.action)close();};
  return <div className="menu-overlay" onMouseDown={e=>{if(e.currentTarget===e.target)close()}}>
@@ -444,6 +445,8 @@ function MenuPanel({player,close,setView,openCodes,openZones,openEvents}:{player
 }
 
 function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUser:any;setPlayer:Dispatch<SetStateAction<PlayerState>>;close:()=>void}){
+ const [password,setPassword]=useState("");
+ const [unlocked,setUnlocked]=useState(false);
  const [targetUsername,setTargetUsername]=useState("");
  const [auraSearch,setAuraSearch]=useState("");
  const [auraId,setAuraId]=useState("");
@@ -460,6 +463,17 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
  const [status,setStatus]=useState("");
  const [error,setError]=useState("");
  const choices=ITEMS.filter(i=>i.name.toLowerCase().includes(auraSearch.toLowerCase())).slice(0,12);
+ const unlock=async()=>{
+   setError("");setStatus("");
+   try{
+     const session=(await supabase?.auth.getSession())?.data.session;
+     if(!session?.access_token)throw new Error("Connecte-toi pour utiliser l’Admin Panel.");
+     const response=await fetch("/api/admin",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({action:"check",adminPassword:password})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||"Mot de passe admin incorrect.");
+     setUnlocked(true);setStatus("✅ Admin Panel déverrouillé.");
+   }catch(e){setError(e instanceof Error?e.message:"Mot de passe admin incorrect.");}
+ };
  const grant=async()=>{
    setBusy(true);setStatus("");setError("");
    try{
@@ -471,6 +485,7 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
        headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},
        body:JSON.stringify({
          action:"grant",
+         adminPassword:password,
          targetUsername:targetUsername.trim(),
          auraId,
          auraQuantity:Number(auraQuantity)||0,
@@ -497,7 +512,14 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
  };
  return <Modal title="ADMIN PANEL • RÉCOMPENSES" close={close}>
   <div className="space-y-4">
-   <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-4 text-xs text-white/55"><b className="text-white">Admin sécurisé</b><br/>Cette interface ne fonctionne que pour le compte administrateur configuré côté serveur.</div>
+   {!unlocked&&<>
+    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-xs text-white/55"><b className="text-white">🔐 ADMIN PANEL PROTÉGÉ</b><br/>Entre le mot de passe pour accéder aux outils.</div>
+    <input className="field w-full" type="password" autoComplete="off" placeholder="Mot de passe admin" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")unlock()}}/>
+    <button className="primary-btn w-full py-3" onClick={unlock}>🔓 DÉVERROUILLER</button>
+    {error&&<div className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
+   </>}
+   {unlocked&&<>
+   <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-xs text-emerald-200"><b className="text-white">Admin sécurisé</b><br/>Panel déverrouillé. Tu peux donner une récompense à un joueur.</div>
    <input className="field w-full" placeholder="Pseudo du joueur cible" value={targetUsername} onChange={e=>setTargetUsername(e.target.value)}/>
    <div className="grid gap-3 sm:grid-cols-3">
     <input className="field" type="number" min="0" placeholder="Coins" value={coins} onChange={e=>setCoins(e.target.value)}/>
@@ -522,7 +544,7 @@ function AdminPanel({player,authUser,setPlayer,close}:{player:PlayerState;authUs
    <label className="setting-card cursor-pointer"><div><div className="font-display text-sm">Débloquer toutes les zones</div><div className="text-xs text-white/35">Ajoute toutes les zones sans retirer les autres données.</div></div><input type="checkbox" checked={unlockAllZones} onChange={e=>setUnlockAllZones(e.target.checked)}/></label>
    {error&&<div className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
    {status&&<div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">{status}</div>}
-   <button className="primary-btn w-full py-3" disabled={busy} onClick={grant}>{busy?"ENVOI...":"🎁 DONNER LA RÉCOMPENSE"}</button>
+   <button className="primary-btn w-full py-3" disabled={busy} onClick={grant}>{busy?"ENVOI...":"🎁 DONNER LA RÉCOMPENSE"}</button></>}
   </div>
  </Modal>
 }
