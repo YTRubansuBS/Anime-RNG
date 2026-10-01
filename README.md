@@ -62,14 +62,13 @@ Build CI: TypeScript + Vite vérifiés à chaque push.
 
 ## Admin Panel
 
-Le panneau **Admin Panel** permet au compte administrateur de donner une récompense à un joueur précis sans passer par le navigateur du joueur.
+Le panneau **Admin Panel** est accessible dans **☰ MENU → Admin Panel** uniquement pour le compte dont le pseudo est **Rubansu1**.
+
+Le contrôle d'accès est fait côté serveur après validation de la session Supabase. Le pseudo est comparé sans tenir compte des majuscules/minuscules.
 
 Variables Vercel nécessaires :
 - `URL` : URL Supabase déjà utilisée par le jeu.
 - `KEY` : clé client Supabase déjà utilisée par le jeu.
 - `SUPABASE_SERVICE_ROLE_KEY` : clé **service role secrète**, uniquement côté serveur Vercel. Ne la mets jamais dans `VITE_` ou dans le code du navigateur.
-- `ADMIN_USER_ID` : UUID Supabase du compte qui doit avoir accès au panneau admin.
-
-Dans le jeu, le panneau apparaît dans **MENU → Admin Panel** uniquement après la vérification serveur du compte administrateur.
 
 Le panneau permet notamment d'ajouter des **coins, gems, tickets, XP, auras**, de définir la **pity Epic / Legendary / Mythic** et de débloquer toutes les zones pour le joueur ciblé.
