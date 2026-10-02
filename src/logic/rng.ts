@@ -43,12 +43,14 @@ export function rollRng(player:PlayerState,banner:RngItem["banner"]){
 
  const allowedRarities:Rarity[]=["COMMON","UNCOMMON","RARE","EPIC","LEGENDARY","MYTHIC","DIVINE","CELESTIAL","TRANSCENDENT","SECRET"];
  const baseWeights:Record<Rarity,number>={
-   COMMON:48,UNCOMMON:24,RARE:13,EPIC:7,LEGENDARY:4,MYTHIC:2.5,DIVINE:1,CELESTIAL:0.35,TRANSCENDENT:0.12,SECRET:0.03
+   COMMON:52,UNCOMMON:25,RARE:13,EPIC:6,LEGENDARY:2.8,MYTHIC:0.9,DIVINE:0.3,CELESTIAL:0.08,TRANSCENDENT:0.025,SECRET:0.005
  };
- const luckFactor=Math.max(1,1+luck/100);
+
+ // Luck still helps, but it no longer explodes the high-rarity weights exponentially.
+ // This keeps strong drops rare even with multiple luck sources.
  const weighted=allowedRarities.map((rarity,index)=>({
    rarity,
-   weight:baseWeights[rarity]*Math.pow(luckFactor,index)
+   weight:baseWeights[rarity]*(1+(Math.max(0,luck)*index)/900)
  }));
  const total=weighted.reduce((sum,x)=>sum+x.weight,0);
  let pick=Math.random()*total;
